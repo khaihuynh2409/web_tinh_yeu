@@ -5,7 +5,7 @@ import { uploadMusicTrack, deleteMusicTrack, renameMusicTrack } from "@/lib/acti
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
 
 interface Track {
-  id: string;
+  id: string | null;
   name: string;
   rawName: string;
   url: string;

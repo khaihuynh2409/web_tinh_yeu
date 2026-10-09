@@ -12,7 +12,7 @@ interface Props {
     name_b: string;
     start_date: string;
     theme: string;
-  };
+  } | null;
 }
 
 export function SettingsForm({ initialSettings }: Props) {
@@ -22,16 +22,16 @@ export function SettingsForm({ initialSettings }: Props) {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const [nameA, setNameA] = useState(initialSettings.name_a);
-  const [nameB, setNameB] = useState(initialSettings.name_b);
-  const [startDate, setStartDate] = useState(initialSettings.start_date);
-  const [theme, setTheme] = useState(initialSettings.theme);
+  const [nameA, setNameA] = useState(initialSettings?.name_a || "");
+  const [nameB, setNameB] = useState(initialSettings?.name_b || "");
+  const [startDate, setStartDate] = useState(initialSettings?.start_date || new Date().toISOString().split("T")[0]);
+  const [theme, setTheme] = useState(initialSettings?.theme || "flower");
 
   const isDirty = 
-    nameA !== initialSettings.name_a ||
-    nameB !== initialSettings.name_b ||
-    startDate !== initialSettings.start_date ||
-    theme !== initialSettings.theme;
+    nameA !== (initialSettings?.name_a || "") ||
+    nameB !== (initialSettings?.name_b || "") ||
+    startDate !== (initialSettings?.start_date || "") ||
+    theme !== (initialSettings?.theme || "flower");
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {

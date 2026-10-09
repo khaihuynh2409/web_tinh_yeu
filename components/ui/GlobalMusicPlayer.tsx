@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 
 interface Track {
-  id: string;
+  id: string | null;
   name: string;
   rawName: string;
   url: string;
