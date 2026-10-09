@@ -1,0 +1,27 @@
+{
+  "name": "Nhật Ký Tình Yêu",
+  "short_name": "Nhật Ký",
+  "description": "Không gian riêng tư lưu giữ kỷ niệm của hai ta",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#F9D5E5",
+  "background_color": "#FFF8F9",
+  "lang": "vi",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["lifestyle", "social"],
+  "prefer_related_applications": false
+}
