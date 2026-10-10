@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 // ────────────────────────────────────────────────
 // Kiểm tra thành viên (dùng trong mọi action)
@@ -126,7 +126,6 @@ export async function restoreMemory(id: string) {
 // ────────────────────────────────────────────────
 export async function permanentDeleteMemory(id: string) {
   const { supabase } = await requireMember();
-  const admin = await createAdminClient();
 
   // Lấy tất cả media paths của kỷ niệm này
   const { data: mediaList } = await supabase
@@ -136,10 +135,10 @@ export async function permanentDeleteMemory(id: string) {
 
   if (mediaList && mediaList.length > 0) {
     const paths = mediaList.map(m => m.storage_path);
-    await admin.storage.from("memories").remove(paths);
+    await supabase.storage.from("memories").remove(paths);
   }
 
-  const { error } = await admin
+  const { error } = await supabase
     .from("memories")
     .delete()
     .eq("id", id);
@@ -177,10 +176,10 @@ export async function attachMedia(
 // Xóa 1 media
 // ────────────────────────────────────────────────
 export async function deleteMedia(mediaId: string, storagePath: string, memoryId: string) {
-  const admin = await createAdminClient();
+  const { supabase } = await requireMember();
 
-  await admin.storage.from("memories").remove([storagePath]);
-  const { error } = await admin.from("media").delete().eq("id", mediaId);
+  await supabase.storage.from("memories").remove([storagePath]);
+  const { error } = await supabase.from("media").delete().eq("id", mediaId);
   if (error) throw new Error(error.message);
 
   revalidatePath(`/memories/${memoryId}`);

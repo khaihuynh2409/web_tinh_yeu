@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 // Helper functions to safely encode/decode unicode filenames to Base64Url
 function encodeFileName(name: string) {
@@ -42,8 +42,7 @@ export async function POST(request: NextRequest) {
     const safeName = encodeFileName(baseName) + "." + ext;
     const storagePath = `${memoryId}/${Date.now()}_${safeName}`;
 
-    const admin = await createAdminClient();
-    const { error: uploadError } = await admin.storage
+    const { error: uploadError } = await supabase.storage
       .from("memories")
       .upload(storagePath, file, {
         contentType: file.type,
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Lưu vào bảng media
-    const { data: mediaRow, error: dbError } = await admin.from("media").insert({
+    const { data: mediaRow, error: dbError } = await supabase.from("media").insert({
       memory_id: memoryId,
       storage_path: storagePath,
       type: isVideo ? "video" : "image",
@@ -67,7 +66,7 @@ export async function POST(request: NextRequest) {
     if (dbError) {
       console.error("DB insert error for media:", dbError);
       // Rollback: xóa file vừa upload nếu ghi DB thất bại
-      await admin.storage.from("memories").remove([storagePath]);
+      await supabase.storage.from("memories").remove([storagePath]);
       return NextResponse.json({ error: dbError.message }, { status: 500 });
     }
 
