@@ -5,7 +5,11 @@ import { TimelineList } from "@/components/timeline/TimelineList";
 import { BottomNav } from "@/components/BottomNav";
 import { getDaysTogether, getNextMilestone } from "@/lib/utils/date";
 
-export default async function HomePage() {
+export default async function HomePage(props: { searchParams: Promise<{ sort?: string }> }) {
+  const searchParams = await props.searchParams;
+  const sortOrder = searchParams.sort === "oldest" ? "oldest" : "newest";
+  const ascending = sortOrder === "oldest";
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -20,7 +24,7 @@ export default async function HomePage() {
         media ( id, storage_path, type )
       `)
       .is("deleted_at", null)
-      .order("memory_date", { ascending: false })
+      .order("memory_date", { ascending })
       .limit(20),
     supabase.from("profiles").select("display_name").eq("id", user.id).single()
   ]);
@@ -182,23 +186,50 @@ export default async function HomePage() {
           }}>
             Hành trình của chúng mình
           </h2>
-          <a
-            href="/memories/new"
-            style={{
-              padding: "0.4rem 1rem",
-              borderRadius: "9999px",
-              fontSize: "0.85rem",
-              fontWeight: 600,
-              background: "var(--color-primary)",
-              color: "white",
-              border: "none",
-              textDecoration: "none",
-              cursor: "pointer",
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
-            + Yêu nheo thêm mín hỏ
-          </a>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <form method="GET" action="/">
+              <select 
+                name="sort" 
+                defaultValue={sortOrder}
+                onChange={(e) => {
+                  // Fallback for simple submit if JS is enabled
+                  if (typeof document !== 'undefined') {
+                    e.currentTarget.form?.submit();
+                  }
+                }}
+                style={{
+                  padding: "0.3rem 0.5rem",
+                  borderRadius: "8px",
+                  background: "var(--color-surface)",
+                  border: "1px solid var(--color-border)",
+                  color: "var(--color-text)",
+                  fontSize: "0.85rem",
+                  outline: "none",
+                  cursor: "pointer"
+                }}
+              >
+                <option value="newest">Mới nhất</option>
+                <option value="oldest">Lâu nhất</option>
+              </select>
+            </form>
+            <a
+              href="/memories/new"
+              style={{
+                padding: "0.4rem 1rem",
+                borderRadius: "9999px",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                background: "var(--color-primary)",
+                color: "white",
+                border: "none",
+                textDecoration: "none",
+                cursor: "pointer",
+                boxShadow: "var(--shadow-sm)",
+              }}
+            >
+              + Thêm kỷ niệm
+            </a>
+          </div>
         </div>
 
         <TimelineList memories={memories} startDate={settings.start_date} />
