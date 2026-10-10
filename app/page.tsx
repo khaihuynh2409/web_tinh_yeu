@@ -95,6 +95,35 @@ export default async function HomePage(props: { searchParams: Promise<{ sort?: s
         background: "radial-gradient(ellipse at 50% 0%, var(--color-primary-bg) 0%, transparent 60%), linear-gradient(180deg, var(--color-bg) 0%, var(--color-bg-alt) 100%)"
       }} />
 
+      {/* Logout Button (Top Right) */}
+      <div style={{
+        position: "absolute",
+        top: "1.5rem",
+        right: "1.5rem",
+        zIndex: 10,
+      }}>
+        <form action="/api/auth/signout" method="POST">
+          <button
+            type="submit"
+            style={{
+              fontSize: "12px",
+              fontWeight: 600,
+              padding: "0.4rem 0.8rem",
+              borderRadius: "999px",
+              color: "var(--color-text-muted)",
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
+              cursor: "pointer",
+              fontFamily: "var(--font-body)",
+              boxShadow: "var(--shadow-sm)",
+            }}
+            title={`Đăng xuất khỏi ${profile?.display_name}`}
+          >
+            Đăng xuất
+          </button>
+        </form>
+      </div>
+
       {/* HERO SECTION - z:2 */}
       <section style={{
         position: "relative",
@@ -213,34 +242,7 @@ export default async function HomePage(props: { searchParams: Promise<{ sort?: s
         <TimelineList memories={memories} startDate={settings.start_date} />
       </section>
 
-      {/* FOOTER */}
-      <footer style={{
-        position: "relative",
-        zIndex: 2,
-        textAlign: "center",
-        padding: "1.5rem 1rem 1rem",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "0.75rem",
-      }}>
-        <form action="/api/auth/signout" method="POST">
-          <button
-            type="submit"
-            style={{
-              fontSize: "12px",
-              color: "var(--color-text-muted)",
-              opacity: 0.5,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              fontFamily: "var(--font-body)",
-            }}
-          >
-            Đăng xuất khỏi {profile?.display_name}
-          </button>
-        </form>
-      </footer>
+
 
       {/* Bottom Navigation */}
       <BottomNav active="/" />
