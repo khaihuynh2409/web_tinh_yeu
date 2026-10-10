@@ -9,7 +9,7 @@ interface Track {
 }
 
 export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false); // Init to false, update in useEffect
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMinimized, setIsMinimized] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -28,6 +28,12 @@ export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
     const savedIndex = localStorage.getItem("music_current_index");
     if (savedIndex) {
       setCurrentIndex(Number(savedIndex));
+    }
+    const savedPlaying = localStorage.getItem("music_is_playing");
+    if (savedPlaying === "false") {
+      setIsPlaying(false);
+    } else {
+      setIsPlaying(true); // Default to true on first visit
     }
     setIsInitialized(true);
   }, []);
@@ -86,6 +92,7 @@ export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
       return nextIdx;
     });
     setIsPlaying(true);
+    localStorage.setItem("music_is_playing", "true");
   };
 
   const handlePrev = () => {
@@ -96,10 +103,13 @@ export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
       return prevIdx;
     });
     setIsPlaying(true);
+    localStorage.setItem("music_is_playing", "true");
   };
 
   const togglePlay = () => {
-    setIsPlaying(!isPlaying);
+    const newState = !isPlaying;
+    setIsPlaying(newState);
+    localStorage.setItem("music_is_playing", String(newState));
     setAutoplayBlocked(false);
   };
 
@@ -226,6 +236,7 @@ export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
                       localStorage.setItem("music_current_index", idx.toString());
                       localStorage.setItem("music_current_time", "0");
                       setIsPlaying(true);
+                      localStorage.setItem("music_is_playing", "true");
                       setIsDropdownOpen(false);
                     }}
                     onMouseEnter={(e) => {

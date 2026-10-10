@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 
+// Helper functions to safely encode/decode unicode filenames to Base64Url
+function encodeFileName(name: string) {
+  const b64 = Buffer.from(name, 'utf8').toString('base64');
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 // POST /api/media - Upload file lên Supabase Storage
 // Client nén ảnh trước khi gửi (browser-image-compression)
 export async function POST(request: NextRequest) {
@@ -32,7 +38,8 @@ export async function POST(request: NextRequest) {
 
     // Path trong bucket: memories/{memory_id}/{timestamp}_{filename}
     const ext = file.name.split(".").pop() ?? "jpg";
-    const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+    const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+    const safeName = encodeFileName(baseName) + "." + ext;
     const storagePath = `${memoryId}/${Date.now()}_${safeName}`;
 
     const admin = await createAdminClient();

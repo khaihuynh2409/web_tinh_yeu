@@ -139,22 +139,22 @@ export default async function MemoryDetailPage({ params }: Props) {
         {/* Actions */}
         <div style={{ display: "flex", gap: "0.5rem" }}>
           <a
-            href={`/memories/${id}/edit`}
+            href="/"
             style={{
               padding: "0.4rem 1rem",
               borderRadius: "999px",
               fontSize: "0.85rem",
               fontWeight: 700,
-              background: "var(--color-surface)",
-              border: "1.5px solid var(--color-border)",
-              color: "var(--color-text-muted)",
+              background: "var(--color-primary)",
+              border: "1.5px solid var(--color-primary-dark)",
+              color: "var(--color-primary-dark)",
               textDecoration: "none",
               display: "flex",
               alignItems: "center",
               gap: "0.3rem",
             }}
           >
-            ✏️ Sửa
+            ✅ Lưu
           </a>
           <DeleteMemoryButton memoryId={id} />
         </div>
