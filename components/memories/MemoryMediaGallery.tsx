@@ -138,6 +138,15 @@ export function MemoryMediaGallery({ mediaItems }: Props) {
           onClose={() => setLightboxIndex(null)}
         />
       )}
+
+      <style>{`
+        video:fullscreen {
+          object-fit: contain !important;
+        }
+        video:-webkit-full-screen {
+          object-fit: contain !important;
+        }
+      `}</style>
     </>
   );
 }
