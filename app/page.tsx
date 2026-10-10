@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LoveCounter } from "@/components/hero/LoveCounter";
 import { TimelineList } from "@/components/timeline/TimelineList";
+import { TimelineSort } from "@/components/timeline/TimelineSort";
 import { BottomNav } from "@/components/BottomNav";
 import { getDaysTogether, getNextMilestone } from "@/lib/utils/date";
 
@@ -187,31 +188,7 @@ export default async function HomePage(props: { searchParams: Promise<{ sort?: s
             Hành trình của chúng mình
           </h2>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <form method="GET" action="/">
-              <select 
-                name="sort" 
-                defaultValue={sortOrder}
-                onChange={(e) => {
-                  // Fallback for simple submit if JS is enabled
-                  if (typeof document !== 'undefined') {
-                    e.currentTarget.form?.submit();
-                  }
-                }}
-                style={{
-                  padding: "0.3rem 0.5rem",
-                  borderRadius: "8px",
-                  background: "var(--color-surface)",
-                  border: "1px solid var(--color-border)",
-                  color: "var(--color-text)",
-                  fontSize: "0.85rem",
-                  outline: "none",
-                  cursor: "pointer"
-                }}
-              >
-                <option value="newest">Mới nhất</option>
-                <option value="oldest">Lâu nhất</option>
-              </select>
-            </form>
+            <TimelineSort currentSort={sortOrder} />
             <a
               href="/memories/new"
               style={{
