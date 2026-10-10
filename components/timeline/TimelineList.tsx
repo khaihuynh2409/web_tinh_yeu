@@ -7,6 +7,7 @@ type Memory = {
   memory_date: string;
   tags: string[];
   coverUrl?: string;
+  coverType?: "image" | "video";
 };
 
 export function TimelineList({ memories, startDate }: { memories: Memory[], startDate: string }) {
@@ -185,7 +186,7 @@ export function TimelineList({ memories, startDate }: { memories: Memory[], star
                     )}
                   </div>
 
-                  {/* Vùng Ảnh (bên phải) */}
+                  {/* Vùng Ảnh/Video (bên phải) */}
                   {memory.coverUrl && (
                     <div style={{
                       flex: "1 1 240px",
@@ -194,13 +195,24 @@ export function TimelineList({ memories, startDate }: { memories: Memory[], star
                       background: "var(--color-surface-alt)",
                       borderLeft: "1px solid var(--color-border-strong)",
                     }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img 
-                        src={memory.coverUrl} 
-                        alt="Cover" 
-                        style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} 
-                        loading="lazy" 
-                      />
+                      {memory.coverType === "video" ? (
+                        <video 
+                          src={memory.coverUrl} 
+                          style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} 
+                          autoPlay 
+                          muted 
+                          loop 
+                          playsInline
+                        />
+                      ) : (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img 
+                          src={memory.coverUrl} 
+                          alt="Cover" 
+                          style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", inset: 0 }} 
+                          loading="lazy" 
+                        />
+                      )}
                     </div>
                   )}
                 </div>

@@ -34,12 +34,12 @@ export default async function HomePage(props: { searchParams: Promise<{ sort?: s
   const rawMemories = memoriesRes.data || [];
   const profile = profileRes.data;
 
-  // Tạo signed urls cho cover images
+  // Tạo signed urls cho cover media
   const pathsToSign: string[] = [];
   rawMemories.forEach(m => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const firstImage = (m.media as any[])?.find(media => media.type === "image");
-    if (firstImage) pathsToSign.push(firstImage.storage_path);
+    const firstMedia = (m.media as any[])?.[0];
+    if (firstMedia) pathsToSign.push(firstMedia.storage_path);
   });
 
   let signedUrls: Record<string, string> = {};
@@ -55,14 +55,15 @@ export default async function HomePage(props: { searchParams: Promise<{ sort?: s
 
   const memories = rawMemories.map(m => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const firstImage = (m.media as any[])?.find(media => media.type === "image");
+    const firstMedia = (m.media as any[])?.[0];
     return {
       id: m.id,
       title: m.title,
       content: m.content,
       memory_date: m.memory_date,
       tags: m.tags,
-      coverUrl: firstImage ? signedUrls[firstImage.storage_path] : undefined
+      coverUrl: firstMedia ? signedUrls[firstMedia.storage_path] : undefined,
+      coverType: firstMedia ? firstMedia.type : undefined
     };
   });
 
