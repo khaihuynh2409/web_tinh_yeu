@@ -9,7 +9,7 @@ interface Track {
 }
 
 export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMinimized, setIsMinimized] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -17,20 +17,56 @@ export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.5);
   
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const initialTimeSet = useRef(false);
+  
   const audioRef = useRef<HTMLAudioElement>(null);
   
+  // Initialize from localStorage on mount
+  useEffect(() => {
+    const savedIndex = localStorage.getItem("music_current_index");
+    if (savedIndex) {
+      setCurrentIndex(Number(savedIndex));
+    }
+    setIsInitialized(true);
+  }, []);
+
   // Handle play/pause
   useEffect(() => {
-    if (!audioRef.current || playlist.length === 0) return;
+    if (!audioRef.current || playlist.length === 0 || !isInitialized) return;
     
     if (isPlaying) {
       audioRef.current.play().catch(() => {
         setIsPlaying(false);
+        setAutoplayBlocked(true);
       });
     } else {
       audioRef.current.pause();
     }
-  }, [isPlaying, currentIndex, playlist]);
+  }, [isPlaying, currentIndex, playlist, isInitialized]);
+
+  // Global interaction listener to overcome browser autoplay block
+  useEffect(() => {
+    const handleInteraction = () => {
+      if (autoplayBlocked && audioRef.current) {
+        audioRef.current.play().then(() => {
+          setIsPlaying(true);
+          setAutoplayBlocked(false);
+        }).catch(() => {});
+      }
+    };
+    
+    if (autoplayBlocked) {
+      document.addEventListener('click', handleInteraction, { once: true });
+      document.addEventListener('touchstart', handleInteraction, { once: true });
+    }
+    
+    return () => {
+      document.removeEventListener('click', handleInteraction);
+      document.removeEventListener('touchstart', handleInteraction);
+    };
+  }, [autoplayBlocked]);
 
   // Handle volume
   useEffect(() => {
@@ -43,21 +79,54 @@ export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
   const currentTrack = playlist[currentIndex];
 
   const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % playlist.length);
+    setCurrentIndex((prev) => {
+      const nextIdx = (prev + 1) % playlist.length;
+      localStorage.setItem("music_current_index", nextIdx.toString());
+      localStorage.setItem("music_current_time", "0");
+      return nextIdx;
+    });
     setIsPlaying(true);
   };
 
   const handlePrev = () => {
-    setCurrentIndex((prev) => (prev === 0 ? playlist.length - 1 : prev - 1));
+    setCurrentIndex((prev) => {
+      const prevIdx = prev === 0 ? playlist.length - 1 : prev - 1;
+      localStorage.setItem("music_current_index", prevIdx.toString());
+      localStorage.setItem("music_current_time", "0");
+      return prevIdx;
+    });
     setIsPlaying(true);
   };
 
-  const togglePlay = () => setIsPlaying(!isPlaying);
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+    setAutoplayBlocked(false);
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration || 0);
+      if (!initialTimeSet.current) {
+        const savedTime = localStorage.getItem("music_current_time");
+        if (savedTime && Number(savedTime) < (audioRef.current.duration || Infinity)) {
+          audioRef.current.currentTime = Number(savedTime);
+          setProgress(Number(savedTime));
+        }
+        initialTimeSet.current = true;
+      }
+    }
+  };
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
-      setProgress(audioRef.current.currentTime);
+      const currentTime = audioRef.current.currentTime;
+      setProgress(currentTime);
       setDuration(audioRef.current.duration || 0);
+      
+      // Save current time periodically to minimize localStorage writes
+      if (Math.floor(currentTime) % 3 === 0) {
+        localStorage.setItem("music_current_time", currentTime.toString());
+      }
     }
   };
 
@@ -66,6 +135,7 @@ export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
     if (audioRef.current) {
       audioRef.current.currentTime = time;
       setProgress(time);
+      localStorage.setItem("music_current_time", time.toString());
     }
   };
 
@@ -83,7 +153,7 @@ export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
         src={currentTrack?.url}
         onEnded={handleNext}
         onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
       />
 
       <div style={{
@@ -153,6 +223,8 @@ export function GlobalMusicPlayer({ playlist }: { playlist: Track[] }) {
                     key={track.id}
                     onClick={() => {
                       setCurrentIndex(idx);
+                      localStorage.setItem("music_current_index", idx.toString());
+                      localStorage.setItem("music_current_time", "0");
                       setIsPlaying(true);
                       setIsDropdownOpen(false);
                     }}
