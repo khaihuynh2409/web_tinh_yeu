@@ -48,7 +48,7 @@ function LoginForm() {
     setLoading(true);
     setError("");
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     });
@@ -69,10 +69,14 @@ function LoginForm() {
     }
 
     // Kiểm tra is_member sau khi đăng nhập
+    // Dùng .eq('id', user.id) để lọc đúng profile của user hiện tại
+    // Dùng .maybeSingle() thay .single() để tránh lỗi 406 khi RLS chặn
+    const userId = authData.user?.id;
     const { data: profile } = await supabase
       .from("profiles")
       .select("is_member")
-      .single();
+      .eq("id", userId)
+      .maybeSingle();
 
     if (!profile?.is_member) {
       await supabase.auth.signOut();
