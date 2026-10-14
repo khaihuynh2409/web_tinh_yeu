@@ -29,3 +29,44 @@ export async function updateSettings(formData: FormData) {
 
   revalidatePath("/", "layout"); // Revalidate entire app to apply theme and names
 }
+
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  // Lấy thông tin user hiện tại
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (!user || userError) {
+    return { success: false, error: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại." };
+  }
+
+  // Validate mật khẩu mới
+  if (newPassword.length < 6) {
+    return { success: false, error: "Mật khẩu mới phải ít nhất 6 ký tự." };
+  }
+  if (currentPassword === newPassword) {
+    return { success: false, error: "Mật khẩu mới phải khác mật khẩu hiện tại." };
+  }
+
+  // Xác minh mật khẩu hiện tại bằng cách thử đăng nhập lại
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email!,
+    password: currentPassword,
+  });
+  if (signInError) {
+    return { success: false, error: "Mật khẩu hiện tại không đúng." };
+  }
+
+  // Đổi mật khẩu
+  const { error: updateError } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+  if (updateError) {
+    return { success: false, error: "Đổi mật khẩu thất bại. Vui lòng thử lại." };
+  }
+
+  return { success: true };
+}
+
