@@ -13,11 +13,9 @@ export async function createLetter(formData: FormData) {
 
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
-  const openAtDate = formData.get("open_date") as string; // YYYY-MM-DD
-  const openAtTime = formData.get("open_time") as string; // HH:mm
 
-  if (!content?.trim() || !openAtDate) {
-    return { error: "Vui lòng nhập nội dung và ngày mở" };
+  if (!content?.trim()) {
+    return { error: "Vui lòng nhập nội dung thư" };
   }
 
   // Find partner
@@ -33,9 +31,8 @@ export async function createLetter(formData: FormData) {
     return { error: "Chưa tìm thấy nửa kia trong hệ thống" };
   }
 
-  // Combine date and time
-  const timeStr = openAtTime || "00:00";
-  const openAtIso = new Date(`${openAtDate}T${timeStr}:00`).toISOString();
+  // Thư vô thời hạn - có thể đọc ngay lập tức và vĩnh viễn
+  const openAtIso = new Date(0).toISOString();
 
   const { error } = await supabase
     .from("letters")

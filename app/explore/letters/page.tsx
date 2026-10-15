@@ -14,7 +14,7 @@ export default async function LettersPage() {
     supabase
       .from("letters")
       .select("*")
-      .order("open_at", { ascending: true }),
+      .order("created_at", { ascending: false }),
     supabase
       .from("profiles")
       .select("id, display_name"),
@@ -48,12 +48,12 @@ export default async function LettersPage() {
             ←
           </a>
           <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "1.5rem", fontWeight: 800, color: "var(--color-text)", margin: 0 }}>
-            ✉️ Thư hẹn giờ
+            ✉️ Hòm thư tình yêu
           </h1>
         </div>
         
         <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem", marginBottom: "2rem" }}>
-          Gửi gắm tâm tư đến một ngày trong tương lai. Thư chỉ có thể được mở khi đến thời gian đã hẹn.
+          Gửi gắm những lời yêu thương chân thành và tâm tư đến người ấy.
         </p>
 
         <LetterList initialLetters={letters || []} currentUserId={user.id} />

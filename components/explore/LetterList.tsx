@@ -23,16 +23,14 @@ interface Props {
 
 export function LetterList({ initialLetters, currentUserId }: Props) {
   const router = useRouter();
+  const [letters, setLetters] = useState<Letter[]>(initialLetters);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [now, setNow] = useState(new Date().getTime());
 
-  // Update 'now' every second to check lock status
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date().getTime()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    setLetters(initialLetters);
+  }, [initialLetters]);
 
   useEffect(() => {
     const handleFocus = () => {
@@ -56,22 +54,17 @@ export function LetterList({ initialLetters, currentUserId }: Props) {
   }
 
   // Phân loại thư
-  const receivedLetters = initialLetters.filter(l => l.to_user === currentUserId);
-  const sentLetters = initialLetters.filter(l => l.from_user === currentUserId);
+  const receivedLetters = letters.filter(l => l.to_user === currentUserId);
+  const sentLetters = letters.filter(l => l.from_user === currentUserId);
 
   const renderLetter = (letter: Letter, isSent: boolean) => {
-    const openTime = new Date(letter.open_at).getTime();
-    const isLocked = openTime > now;
-
-    // Time left
-    let timeLeftStr = "";
-    if (isLocked) {
-      const diff = openTime - now;
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / 1000 / 60) % 60);
-      timeLeftStr = days > 0 ? `${days} ngày ${hours} giờ` : `${hours} giờ ${minutes} phút`;
-    }
+    const createdDate = new Date(letter.created_at).toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
     return (
       <div key={letter.id} style={{
@@ -80,45 +73,33 @@ export function LetterList({ initialLetters, currentUserId }: Props) {
         borderRadius: "16px",
         border: "1px solid var(--color-border)",
         boxShadow: "var(--shadow-sm)",
-        opacity: isLocked ? 0.85 : 1,
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
           <h4 style={{ margin: 0, fontSize: "1.1rem", color: "var(--color-text)", fontWeight: 700 }}>
             {letter.title}
           </h4>
-          {isLocked ? (
-            <span style={{ fontSize: "1.25rem" }}>🔒</span>
-          ) : (
-            <span style={{ fontSize: "1.25rem" }}>🔓</span>
-          )}
+          <span style={{ fontSize: "1.25rem" }}>💌</span>
         </div>
 
-        <p style={{ margin: "0 0 1rem", fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
-          {isSent ? `Gửi đến: ${letter.to?.display_name}` : `Từ: ${letter.from?.display_name}`}
-        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
+            {isSent ? `Gửi đến: ${letter.to?.display_name || "Người ấy"}` : `Từ: ${letter.from?.display_name || "Người ấy"}`}
+          </p>
+          <span style={{ fontSize: "0.75rem", color: "var(--color-text-light)" }}>
+            {createdDate}
+          </span>
+        </div>
 
-        {isLocked ? (
-          <div style={{
-            background: "var(--color-bg)", padding: "1rem", borderRadius: "12px",
-            textAlign: "center", border: "1px dashed var(--color-border)"
-          }}>
-            <p style={{ margin: "0 0 0.5rem", fontSize: "0.85rem", color: "var(--color-text)" }}>
-              Sẽ mở sau:
-            </p>
-            <p style={{ margin: 0, fontSize: "1.25rem", color: "var(--color-primary-dark)", fontWeight: 800 }}>
-              {timeLeftStr}
-            </p>
-          </div>
-        ) : (
-          <div style={{
-            background: "var(--color-bg)", padding: "1rem", borderRadius: "12px",
-            border: "1px solid var(--color-border)"
-          }}>
-            <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--color-text)", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
-              {letter.content}
-            </p>
-          </div>
-        )}
+        <div style={{
+          background: "var(--color-bg)",
+          padding: "1rem",
+          borderRadius: "12px",
+          border: "1px solid var(--color-border)",
+        }}>
+          <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--color-text)", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+            {letter.content}
+          </p>
+        </div>
       </div>
     );
   };
@@ -153,14 +134,14 @@ export function LetterList({ initialLetters, currentUserId }: Props) {
           marginBottom: "2rem",
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "1rem" }}>
-            <h3 style={{ fontSize: "1rem", margin: 0, color: "var(--color-text)" }}>Viết thư</h3>
-            <button type="button" onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: "var(--color-text-muted)" }}>Hủy</button>
+            <h3 style={{ fontSize: "1rem", margin: 0, color: "var(--color-text)" }}>Viết thư gửi người ấy 💌</h3>
+            <button type="button" onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: "var(--color-text-muted)", cursor: "pointer" }}>Hủy</button>
           </div>
 
           <input
             type="text"
             name="title"
-            placeholder="Tiêu đề (VD: Cho anh năm 30 tuổi)"
+            placeholder="Tiêu đề (VD: Gửi em yêu, Ngày kỷ niệm...)"
             required
             style={{
               width: "100%", padding: "0.75rem", borderRadius: "8px",
@@ -170,67 +151,38 @@ export function LetterList({ initialLetters, currentUserId }: Props) {
           />
           <textarea
             name="content"
-            placeholder="Nội dung thư..."
-            rows={5}
+            placeholder="Nội dung thư gửi gắm tâm tư..."
+            rows={6}
             required
             style={{
               width: "100%", padding: "0.75rem", borderRadius: "8px",
-              border: "1px solid var(--color-border)", marginBottom: "1rem",
+              border: "1px solid var(--color-border)", marginBottom: "1.25rem",
               background: "var(--color-bg)", color: "var(--color-text)", fontFamily: "inherit", resize: "none"
             }}
           />
-
-          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: "0.75rem", color: "var(--color-text-muted)", marginBottom: "0.25rem" }}>Ngày mở thư</label>
-              <input
-                type="date"
-                name="open_date"
-                required
-                min={new Date().toISOString().split("T")[0]}
-                style={{
-                  width: "100%", padding: "0.75rem", borderRadius: "8px",
-                  border: "1px solid var(--color-border)",
-                  background: "var(--color-bg)", color: "var(--color-text)", fontFamily: "inherit"
-                }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: "block", fontSize: "0.75rem", color: "var(--color-text-muted)", marginBottom: "0.25rem" }}>Giờ (Tùy chọn)</label>
-              <input
-                type="time"
-                name="open_time"
-                style={{
-                  width: "100%", padding: "0.75rem", borderRadius: "8px",
-                  border: "1px solid var(--color-border)",
-                  background: "var(--color-bg)", color: "var(--color-text)", fontFamily: "inherit"
-                }}
-              />
-            </div>
-          </div>
 
           <button
             type="submit"
             disabled={isPending}
             style={{
-              width: "100%", padding: "0.75rem", borderRadius: "8px",
+              width: "100%", padding: "0.85rem", borderRadius: "8px",
               border: "none", background: "var(--color-primary)", color: "var(--color-text)",
               fontWeight: 700, cursor: isPending ? "wait" : "pointer", opacity: isPending ? 0.7 : 1
             }}
           >
-            {isPending ? "Đang gửi..." : "Gửi thư ✈️"}
+            {isPending ? "Đang gửi..." : "Gửi thư 💌"}
           </button>
         </form>
       )}
 
-      {/* Tabs */}
+      {/* Danh sách thư */}
       <h3 style={{ fontSize: "1.1rem", margin: "0 0 1rem", color: "var(--color-text)", borderBottom: "2px solid var(--color-border)", paddingBottom: "0.5rem" }}>
         Thư nhận được
       </h3>
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
         {receivedLetters.length > 0
           ? receivedLetters.map(l => renderLetter(l, false))
-          : <p style={{ color: "var(--color-text-muted)", fontSize: "0.85rem", fontStyle: "italic" }}>Chưa có thư nào được gửi đến tụi mình.</p>
+          : <p style={{ color: "var(--color-text-muted)", fontSize: "0.85rem", fontStyle: "italic" }}>Chưa có thư nào được gửi đến bạn.</p>
         }
       </div>
 

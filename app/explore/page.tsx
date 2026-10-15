@@ -12,8 +12,8 @@ const EXPLORE_CARDS = [
   },
   {
     href: "/explore/letters",
-    title: "Thư hẹn giờ",
-    description: "Gửi gắm tâm tư đến một ngày trong tương lai",
+    title: "Thư tình yêu",
+    description: "Gửi gắm những lời yêu thương chân thành",
     icon: "✉️",
     color: "#A7F3D0",
   },
