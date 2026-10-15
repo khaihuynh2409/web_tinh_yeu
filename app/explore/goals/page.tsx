@@ -2,16 +2,29 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GoalList } from "@/components/explore/GoalList";
 
+export const dynamic = "force-dynamic";
+
 export default async function GoalsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: goals } = await supabase
-    .from("goals")
-    .select("*, profiles:done_by(display_name)")
-    .order("done", { ascending: true })
-    .order("created_at", { ascending: false });
+  const [goalsRes, profilesRes] = await Promise.all([
+    supabase
+      .from("goals")
+      .select("*")
+      .order("done", { ascending: true })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id, display_name"),
+  ]);
+
+  const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+  const goals = (goalsRes.data || []).map(g => ({
+    ...g,
+    profiles: g.done_by ? profileMap.get(g.done_by) || null : null,
+  }));
 
   return (
     <main style={{

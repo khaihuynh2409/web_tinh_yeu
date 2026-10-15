@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createLetter } from "@/lib/actions/letters";
 
 interface Letter {
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function LetterList({ initialLetters, currentUserId }: Props) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -32,13 +34,23 @@ export function LetterList({ initialLetters, currentUserId }: Props) {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    const handleFocus = () => {
+      router.refresh();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [router]);
+
   async function handleAdd(formData: FormData) {
     setError(null);
     startTransition(async () => {
       const res = await createLetter(formData);
-      if (res?.error) setError(res.error);
-      else {
+      if (res?.error) {
+        setError(res.error);
+      } else {
         setShowForm(false);
+        router.refresh();
       }
     });
   }

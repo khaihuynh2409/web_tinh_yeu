@@ -2,15 +2,28 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { QuizList } from "@/components/explore/QuizList";
 
+export const dynamic = "force-dynamic";
+
 export default async function QuizPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: quizzes } = await supabase
-    .from("quiz_questions")
-    .select("*, profiles:created_by(display_name)")
-    .order("created_at", { ascending: false });
+  const [quizzesRes, profilesRes] = await Promise.all([
+    supabase
+      .from("quiz_questions")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id, display_name"),
+  ]);
+
+  const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+  const quizzes = (quizzesRes.data || []).map(q => ({
+    ...q,
+    profiles: profileMap.get(q.created_by) || null,
+  }));
 
   return (
     <main style={{

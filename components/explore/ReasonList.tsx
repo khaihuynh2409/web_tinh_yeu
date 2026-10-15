@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { createReason, deleteReason } from "@/lib/actions/reasons";
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
 
@@ -18,23 +19,38 @@ interface Props {
 }
 
 export function ReasonList({ initialReasons, currentUserId }: Props) {
+  const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const [isPending, startTransition] = useTransition();
   const confirm = useConfirm();
   const [error, setError] = useState<string | null>(null);
   const [optimisticReasons, setOptimisticReasons] = useState<Reason[]>(initialReasons);
 
-  if (initialReasons !== optimisticReasons && !isPending) {
+  useEffect(() => {
     setOptimisticReasons(initialReasons);
-  }
+  }, [initialReasons]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      router.refresh();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [router]);
 
   async function handleAdd(formData: FormData) {
     setError(null);
     const content = formData.get("content") as string;
-    if (!content.trim()) return;
+    if (!content?.trim()) return;
 
     startTransition(async () => {
       const res = await createReason(formData);
-      if (res?.error) setError(res.error);
+      if (res?.error) {
+        setError(res.error);
+      } else {
+        formRef.current?.reset();
+        router.refresh();
+      }
     });
   }
 
@@ -58,7 +74,7 @@ export function ReasonList({ initialReasons, currentUserId }: Props) {
       )}
 
       {/* Add Form */}
-      <form action={handleAdd} style={{
+      <form ref={formRef} action={handleAdd} style={{
         background: "var(--color-surface)",
         padding: "1.25rem",
         borderRadius: "16px",

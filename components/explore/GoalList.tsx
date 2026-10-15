@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createGoal, toggleGoal, deleteGoal } from "@/lib/actions/goals";
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
 
@@ -21,6 +21,7 @@ interface Props {
 }
 
 export function GoalList({ initialGoals, currentUserId }: Props) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const confirm = useConfirm();
   const [error, setError] = useState<string | null>(null);
@@ -29,20 +30,27 @@ export function GoalList({ initialGoals, currentUserId }: Props) {
   const [optimisticGoals, setOptimisticGoals] = useState<Goal[]>(initialGoals);
 
   // Sync when initialGoals change
-  if (initialGoals !== optimisticGoals && !isPending) {
+  useEffect(() => {
     setOptimisticGoals(initialGoals);
-  }
+  }, [initialGoals]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      router.refresh();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [router]);
 
   async function handleAdd(formData: FormData) {
     setError(null);
     const title = formData.get("title") as string;
-    const desc = formData.get("description") as string;
-    if (!title.trim()) return;
+    if (!title?.trim()) return;
 
-    // Optional: Optimistic add logic could go here, but simple wait is fine for adding.
     startTransition(async () => {
       const res = await createGoal(formData);
       if (res?.error) setError(res.error);
+      else router.refresh();
     });
   }
 

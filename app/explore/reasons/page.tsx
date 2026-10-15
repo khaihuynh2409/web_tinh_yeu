@@ -2,15 +2,28 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ReasonList } from "@/components/explore/ReasonList";
 
+export const dynamic = "force-dynamic";
+
 export default async function ReasonsPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: reasons } = await supabase
-    .from("reasons")
-    .select("*, profiles:created_by(display_name)")
-    .order("created_at", { ascending: false });
+  const [reasonsRes, profilesRes] = await Promise.all([
+    supabase
+      .from("reasons")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id, display_name"),
+  ]);
+
+  const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+  const reasons = (reasonsRes.data || []).map(r => ({
+    ...r,
+    profiles: profileMap.get(r.created_by) || null,
+  }));
 
   return (
     <main style={{

@@ -2,16 +2,30 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { LetterList } from "@/components/explore/LetterList";
 
+export const dynamic = "force-dynamic";
+
 export default async function LettersPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   // Get letters sent to user or by user
-  const { data: letters } = await supabase
-    .from("letters")
-    .select("*, from:from_user(display_name), to:to_user(display_name)")
-    .order("open_at", { ascending: true });
+  const [lettersRes, profilesRes] = await Promise.all([
+    supabase
+      .from("letters")
+      .select("*")
+      .order("open_at", { ascending: true }),
+    supabase
+      .from("profiles")
+      .select("id, display_name"),
+  ]);
+
+  const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+  const letters = (lettersRes.data || []).map(l => ({
+    ...l,
+    from: profileMap.get(l.from_user) || null,
+    to: profileMap.get(l.to_user) || null,
+  }));
 
   return (
     <main style={{

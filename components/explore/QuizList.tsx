@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createQuiz, deleteQuiz } from "@/lib/actions/quiz";
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
 
@@ -21,6 +21,8 @@ interface Props {
 }
 
 export function QuizList({ initialQuizzes, currentUserId }: Props) {
+  const router = useRouter();
+  const [quizzes, setQuizzes] = useState<Quiz[]>(initialQuizzes);
   const [isPending, startTransition] = useTransition();
   const confirm = useConfirm();
   const [error, setError] = useState<string | null>(null);
@@ -28,21 +30,42 @@ export function QuizList({ initialQuizzes, currentUserId }: Props) {
   const [revealedAnswers, setRevealedAnswers] = useState<Record<string, boolean>>({});
   const [revealedHints, setRevealedHints] = useState<Record<string, boolean>>({});
 
+  useEffect(() => {
+    setQuizzes(initialQuizzes);
+  }, [initialQuizzes]);
+
+  useEffect(() => {
+    const handleFocus = () => {
+      router.refresh();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [router]);
+
   async function handleAdd(formData: FormData) {
     setError(null);
     startTransition(async () => {
       const res = await createQuiz(formData);
-      if (res?.error) setError(res.error);
-      else setShowForm(false);
+      if (res?.error) {
+        setError(res.error);
+      } else {
+        setShowForm(false);
+        router.refresh();
+      }
     });
   }
 
   async function handleDelete(id: string) {
     const confirmed = await confirm("Xóa câu hỏi này?");
     if (!confirmed) return;
+    setQuizzes(prev => prev.filter(q => q.id !== id));
     startTransition(async () => {
       const res = await deleteQuiz(id);
-      if (res?.error) setError(res.error);
+      if (res?.error) {
+        setError(res.error);
+      } else {
+        router.refresh();
+      }
     });
   }
 
@@ -129,7 +152,7 @@ export function QuizList({ initialQuizzes, currentUserId }: Props) {
 
       {/* List */}
       <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-        {initialQuizzes.map(quiz => {
+        {quizzes.map(quiz => {
           const isMine = quiz.created_by === currentUserId;
           const showAns = revealedAnswers[quiz.id] || isMine;
           const showHint = revealedHints[quiz.id] || isMine;
@@ -211,7 +234,7 @@ export function QuizList({ initialQuizzes, currentUserId }: Props) {
           );
         })}
         
-        {initialQuizzes.length === 0 && (
+        {quizzes.length === 0 && (
           <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0" }}>
             Chưa có câu đố nào. Hãy thử hỏi đối phương một câu nhé!
           </p>
