@@ -57,7 +57,7 @@ export function ReasonList({ initialReasons, currentUserId }: Props) {
   async function handleDelete(id: string) {
     const confirmed = await confirm("Xóa lý do này?");
     if (!confirmed) return;
-    
+
     setOptimisticReasons(prev => prev.filter(r => r.id !== id));
     startTransition(async () => {
       const res = await deleteReason(id);
@@ -82,22 +82,22 @@ export function ReasonList({ initialReasons, currentUserId }: Props) {
         boxShadow: "var(--shadow-sm)",
         marginBottom: "2rem",
       }}>
-        <textarea 
-          name="content" 
+        <textarea
+          name="content"
           placeholder="Lý do khiến bạn yêu người ấy..."
           rows={3}
           required
           style={{
-            width: "100%", padding: "0.75rem", borderRadius: "8px", 
+            width: "100%", padding: "0.75rem", borderRadius: "8px",
             border: "1px solid var(--color-border)", marginBottom: "1rem",
             background: "var(--color-bg)", color: "var(--color-text)", fontFamily: "inherit", resize: "none"
           }}
         />
-        <button 
-          type="submit" 
+        <button
+          type="submit"
           disabled={isPending}
           style={{
-            width: "100%", padding: "0.75rem", borderRadius: "8px", 
+            width: "100%", padding: "0.75rem", borderRadius: "8px",
             border: "none", background: "var(--color-primary)", color: "var(--color-text)",
             fontWeight: 700, cursor: isPending ? "wait" : "pointer", opacity: isPending ? 0.7 : 1
           }}
@@ -120,26 +120,25 @@ export function ReasonList({ initialReasons, currentUserId }: Props) {
               boxShadow: "var(--shadow-sm)",
               position: "relative",
             }}>
-              <div style={{ 
-                position: "absolute", top: "-12px", left: "16px", 
-                background: "var(--color-accent)", color: "var(--color-text)", 
+              <div style={{
+                position: "absolute", top: "-12px", left: "16px",
+                background: "var(--color-accent)", color: "var(--color-text)",
                 padding: "2px 8px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 800,
                 border: "1px solid var(--color-border)"
               }}>
                 #{optimisticReasons.length - index}
               </div>
-              
+
               <p style={{ margin: "0.5rem 0 1rem", fontSize: "1.05rem", color: "var(--color-text)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
                 {reason.content}
               </p>
-              
+
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <p style={{ margin: 0, fontSize: "0.75rem", color: "var(--color-text-muted)", fontStyle: "italic" }}>
-                  Bởi {reason.profiles?.display_name || "Unknown"} 
-                  {new Date(reason.created_at).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                  Bởi {reason.profiles?.display_name || "Unknown"} - {new Date(reason.created_at).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
                 </p>
                 {isMine && (
-                  <button 
+                  <button
                     onClick={() => handleDelete(reason.id)}
                     style={{
                       background: "none", border: "none", color: "var(--color-text-light)",
