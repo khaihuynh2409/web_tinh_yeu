@@ -2,10 +2,10 @@
 
 // Bottom navigation bar dùng chung
 const NAV_ITEMS = [
-  { href: "/", label: "Nhà", icon: "🏠" },
-  { href: "/album", label: "Album", icon: "🖼️" },
+  { href: "/", label: "Trang chủ", icon: "🏠" },
+  { href: "/media", label: "Đa phương tiện", icon: "🖼️" },
   { href: "/memories/new", label: "Thêm", icon: "✚", primary: true },
-  { href: "/videos", label: "Video", icon: "🎬" },
+  { href: "/achievements", label: "Thành tích", icon: "🏆" },
   { href: "/explore", label: "Khám phá", icon: "✨" },
 ];
 
@@ -44,7 +44,8 @@ export function BottomNav({ active }: { active?: string }) {
                 alignItems: "center",
                 textDecoration: "none",
                 gap: "2px",
-                padding: "0.5rem",
+                padding: "0.5rem 0",
+                flex: 1,
               }}
             >
               <div style={{
@@ -87,10 +88,11 @@ export function BottomNav({ active }: { active?: string }) {
               alignItems: "center",
               textDecoration: "none",
               gap: "2px",
-              padding: "0.5rem 0.75rem",
+              padding: "0.5rem 0.15rem",
               borderRadius: "12px",
               transition: "background 0.2s",
-              minWidth: 52,
+              flex: 1,
+              minWidth: 0,
             }}
           >
             <span style={{
@@ -106,6 +108,7 @@ export function BottomNav({ active }: { active?: string }) {
               fontWeight: isActive ? 700 : 500,
               color: isActive ? "var(--color-primary-dark)" : "var(--color-text-muted)",
               transition: "color 0.2s",
+              whiteSpace: "nowrap",
             }}>
               {item.label}
             </span>

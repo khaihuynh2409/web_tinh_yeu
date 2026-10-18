@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { queueNotify } from "@/lib/push/send";
 
 export async function createLetter(formData: FormData) {
   const supabase = await createClient();
@@ -48,6 +49,14 @@ export async function createLetter(formData: FormData) {
     console.error("Error creating letter:", error);
     return { error: "Không thể gửi thư" };
   }
+
+  queueNotify({
+    kind: "letter",
+    actorId: user.id,
+    toUserId: partner.id,
+    subject: title?.trim() || "Thư gửi người ấy",
+    url: "/explore/letters",
+  });
 
   revalidatePath("/explore/letters");
   return { success: true };

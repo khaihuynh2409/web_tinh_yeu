@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { queueNotify } from "@/lib/push/send";
 
 // ────────────────────────────────────────────────
 // Kiểm tra thành viên (dùng trong mọi action)
@@ -53,6 +54,13 @@ export async function createMemory(formData: FormData) {
     .single();
 
   if (error) throw new Error(error.message);
+
+  queueNotify({
+    kind: "memory",
+    actorId: user.id,
+    subject: title,
+    url: `/memories/${data.id}`,
+  });
 
   revalidatePath("/");
   redirect(`/memories/${data.id}`);

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "@/components/settings/SettingsForm";
 import { MusicManager } from "@/components/settings/MusicManager";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
+import { NotificationToggle } from "@/components/notifications/PushManager";
 import { getPlaylist } from "@/lib/actions/music";
 
 export default async function SettingsPage() {
@@ -21,6 +22,7 @@ export default async function SettingsPage() {
     }}>
       <div style={{ maxWidth: "640px", margin: "0 auto" }}>
         <SettingsForm initialSettings={settings} />
+        <NotificationToggle />
         <MusicManager playlist={playlist} />
         <ChangePasswordForm />
       </div>
