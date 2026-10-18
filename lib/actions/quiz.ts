@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { queueNotify } from "@/lib/push/send";
 
 export async function createQuiz(formData: FormData) {
   const supabase = await createClient();
@@ -32,6 +33,13 @@ export async function createQuiz(formData: FormData) {
     console.error("Error creating quiz:", error);
     return { error: "Không thể thêm câu hỏi" };
   }
+
+  queueNotify({
+    kind: "quiz",
+    actorId: user.id,
+    subject: question.trim(),
+    url: "/explore/quiz",
+  });
 
   revalidatePath("/explore/quiz");
   return { success: true };

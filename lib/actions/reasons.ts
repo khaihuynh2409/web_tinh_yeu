@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { queueNotify } from "@/lib/push/send";
 
 export async function createReason(formData: FormData) {
   const supabase = await createClient();
@@ -28,6 +29,13 @@ export async function createReason(formData: FormData) {
     console.error("Error creating reason:", error);
     return { error: "Không thể thêm lý do" };
   }
+
+  queueNotify({
+    kind: "reason",
+    actorId: user.id,
+    subject: content.trim(),
+    url: "/explore/reasons",
+  });
 
   revalidatePath("/explore/reasons");
   return { success: true };

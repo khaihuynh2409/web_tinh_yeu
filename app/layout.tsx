@@ -5,6 +5,7 @@ import { getPlaylist } from "@/lib/actions/music";
 import { Decorations } from "@/components/decorations/Decorations";
 import { ConfirmDialogProvider } from "@/components/ui/ConfirmDialogProvider";
 import { GlobalMusicPlayer } from "@/components/ui/GlobalMusicPlayer";
+import { PushSync } from "@/components/notifications/PushManager";
 import "./globals.css";
 
 // Font tiêu đề lãng mạn - hỗ trợ tiếng Việt đầy đủ dấu
@@ -83,6 +84,7 @@ export default async function RootLayout({
         <ConfirmDialogProvider>
           <Decorations theme={theme} />
           <GlobalMusicPlayer playlist={playlist} />
+          <PushSync />
           {children}
         </ConfirmDialogProvider>
       </body>

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { queueNotify } from "@/lib/push/send";
 
 export async function createGoal(formData: FormData) {
   const supabase = await createClient();
@@ -32,6 +33,13 @@ export async function createGoal(formData: FormData) {
     return { error: "Không thể tạo mục tiêu" };
   }
 
+  queueNotify({
+    kind: "goal",
+    actorId: user.id,
+    subject: title.trim(),
+    url: "/explore/goals",
+  });
+
   revalidatePath("/explore/goals");
   return { success: true };
 }
@@ -54,14 +62,25 @@ export async function toggleGoal(id: string, isDone: boolean) {
     done_at: null
   };
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("goals")
     .update(updateData)
-    .eq("id", id);
+    .eq("id", id)
+    .select("title")
+    .maybeSingle();
 
   if (error) {
     console.error("Error toggling goal:", error);
     return { error: "Không thể cập nhật mục tiêu" };
+  }
+
+  if (isDone && updated) {
+    queueNotify({
+      kind: "goal_done",
+      actorId: user.id,
+      subject: updated.title,
+      url: "/explore/goals",
+    });
   }
 
   revalidatePath("/explore/goals");

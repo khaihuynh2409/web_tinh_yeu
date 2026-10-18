@@ -4,6 +4,8 @@ import { LoveCounter } from "@/components/hero/LoveCounter";
 import { TimelineList } from "@/components/timeline/TimelineList";
 import { TimelineSort } from "@/components/timeline/TimelineSort";
 import { BottomNav } from "@/components/BottomNav";
+import { LogoutButton } from "@/components/auth/LogoutButton";
+import { NotificationPrompt } from "@/components/notifications/PushManager";
 import { getDaysTogether, getNextMilestone } from "@/lib/utils/date";
 
 export default async function HomePage(props: { searchParams: Promise<{ sort?: string }> }) {
@@ -102,26 +104,7 @@ export default async function HomePage(props: { searchParams: Promise<{ sort?: s
         right: "1.5rem",
         zIndex: 10,
       }}>
-        <form action="/api/auth/signout" method="POST">
-          <button
-            type="submit"
-            style={{
-              fontSize: "12px",
-              fontWeight: 600,
-              padding: "0.4rem 0.8rem",
-              borderRadius: "999px",
-              color: "var(--color-text-muted)",
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
-              cursor: "pointer",
-              fontFamily: "var(--font-body)",
-              boxShadow: "var(--shadow-sm)",
-            }}
-            title={`Đăng xuất khỏi ${profile?.display_name}`}
-          >
-            Đăng xuất
-          </button>
-        </form>
+        <LogoutButton displayName={profile?.display_name} />
       </div>
 
       {/* HERO SECTION - z:2 */}
@@ -203,6 +186,8 @@ export default async function HomePage(props: { searchParams: Promise<{ sort?: s
         margin: "0 auto",
         padding: "0 1.5rem",
       }}>
+        <NotificationPrompt />
+
         <div style={{
           display: "flex",
           alignItems: "center",

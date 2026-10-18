@@ -62,3 +62,55 @@ self.addEventListener("message", (event) => {
     });
   }
 });
+
+// ────────────────────────────────────────────────
+// Web Push: hiển thị thông báo khi có nội dung mới
+// ────────────────────────────────────────────────
+interface PushLikeEvent extends ExtendableEvent {
+  data: { json(): unknown; text(): string } | null;
+}
+
+interface NotificationClickLikeEvent extends ExtendableEvent {
+  notification: Notification;
+}
+
+self.addEventListener("push", ((event: PushLikeEvent) => {
+  let payload: { title?: string; body?: string; url?: string } = {};
+  try {
+    payload = (event.data?.json() as typeof payload) ?? {};
+  } catch {
+    payload = { body: event.data?.text() };
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || "Nhật Ký Tình Yêu", {
+      body: payload.body || "Có điều mới dành cho bạn 💕",
+      icon: "/icons/icon.svg",
+      data: { url: payload.url || "/" },
+    })
+  );
+}) as EventListener);
+
+// Bấm vào thông báo → mở/focus app và đi tới đúng trang
+self.addEventListener("notificationclick", ((event: NotificationClickLikeEvent) => {
+  event.notification.close();
+  const target = new URL(
+    (event.notification.data as { url?: string } | undefined)?.url || "/",
+    self.location.origin
+  ).href;
+
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      for (const client of windows) {
+        await client.focus();
+        if ("navigate" in client) await client.navigate(target);
+        return;
+      }
+      await self.clients.openWindow(target);
+    })()
+  );
+}) as EventListener);
