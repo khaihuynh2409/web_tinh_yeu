@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { notifyPartner } from "@/lib/push/send";
 
 // ────────────────────────────────────────────────
 // Kiểm tra thành viên (dùng trong mọi action)
@@ -53,6 +54,12 @@ export async function createMemory(formData: FormData) {
     .single();
 
   if (error) throw new Error(error.message);
+
+  await notifyPartner(user.id, {
+    title: "Kỷ niệm mới 📸",
+    body: title ? `Người ấy vừa thêm: ${title}` : "Người ấy vừa thêm một kỷ niệm mới.",
+    url: `/memories/${data.id}`,
+  });
 
   revalidatePath("/");
   redirect(`/memories/${data.id}`);

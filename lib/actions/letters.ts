@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { notifyPartner } from "@/lib/push/send";
 
 export async function createLetter(formData: FormData) {
   const supabase = await createClient();
@@ -48,6 +49,12 @@ export async function createLetter(formData: FormData) {
     console.error("Error creating letter:", error);
     return { error: "Không thể gửi thư" };
   }
+
+  await notifyPartner(user.id, {
+    title: "Bạn có thư mới 💌",
+    body: "Người ấy vừa gửi cho bạn một bức thư.",
+    url: "/explore/letters",
+  });
 
   revalidatePath("/explore/letters");
   return { success: true };
