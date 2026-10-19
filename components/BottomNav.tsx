@@ -3,9 +3,9 @@
 // Bottom navigation bar dùng chung
 const NAV_ITEMS = [
   { href: "/", label: "Nhà", icon: "🏠" },
-  { href: "/album", label: "Album", icon: "🖼️" },
+  { href: "/media", label: "Đa phương tiện", icon: "🖼️" },
   { href: "/memories/new", label: "Thêm", icon: "✚", primary: true },
-  { href: "/videos", label: "Video", icon: "🎬" },
+  { href: "/achievements", label: "Thành tích", icon: "🏆" },
   { href: "/explore", label: "Khám phá", icon: "✨" },
 ];
 
@@ -103,6 +103,7 @@ export function BottomNav({ active }: { active?: string }) {
             </span>
             <span style={{
               fontSize: "10px",
+              whiteSpace: "nowrap",
               fontWeight: isActive ? 700 : 500,
               color: isActive ? "var(--color-primary-dark)" : "var(--color-text-muted)",
               transition: "color 0.2s",
