@@ -18,6 +18,18 @@ function urlBase64ToUint8Array(base64: string) {
   return out;
 }
 
+/** Đăng ký service worker nếu chưa có và chờ tối đa 10s để nó sẵn sàng. */
+async function getReadyRegistration() {
+  await navigator.serviceWorker.register("/sw.js");
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(
+      () => reject(new Error("Service worker chưa sẵn sàng. Hãy thử trên bản đã deploy (production) rồi tải lại app.")),
+      10000
+    )
+  );
+  return Promise.race([navigator.serviceWorker.ready, timeout]);
+}
+
 function isIos() {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
@@ -67,7 +79,7 @@ export function NotificationSettings() {
           setError("Bạn chưa cho phép thông báo. Hãy bật quyền thông báo trong cài đặt trình duyệt.");
           return;
         }
-        const reg = await navigator.serviceWorker.ready;
+        const reg = await getReadyRegistration();
         const sub =
           (await reg.pushManager.getSubscription()) ??
           (await reg.pushManager.subscribe({

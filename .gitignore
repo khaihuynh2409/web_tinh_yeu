@@ -34,3 +34,8 @@ next-env.d.ts
 
 # Testing
 coverage/
+
+# Service worker sinh ra khi build (Serwist)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js
