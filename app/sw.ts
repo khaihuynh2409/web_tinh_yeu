@@ -62,3 +62,43 @@ self.addEventListener("message", (event) => {
     });
   }
 });
+
+// ────────────────────────────────────────────────
+// Web Push: hiển thị thông báo và mở trang khi bấm
+// ────────────────────────────────────────────────
+self.addEventListener("push", (event) => {
+  let data: { title?: string; body?: string; url?: string } = {};
+  try {
+    data = event.data?.json() ?? {};
+  } catch {
+    data = { body: event.data?.text() };
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Nhật Ký Tình Yêu 💕", {
+      body: data.body,
+      icon: "/icons/icon.svg",
+      badge: "/icons/icon.svg",
+      data: { url: data.url || "/" },
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data as { url?: string } | undefined)?.url || "/";
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        for (const client of clients) {
+          if ("focus" in client) {
+            void client.navigate(url);
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(url);
+      })
+  );
+});

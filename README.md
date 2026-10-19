@@ -34,3 +34,29 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Thông báo (Web Push)
+
+Ứng dụng gửi thông báo cho nửa kia khi có **thư mới** hoặc **kỷ niệm mới**. Bật/tắt ở **Cài đặt → Thông báo** (mỗi thiết bị bật riêng).
+
+### Cấu hình trên server
+
+1. Chạy migration `supabase/migrations/004_push_subscriptions.sql` trong Supabase SQL Editor.
+2. Tạo cặp khóa VAPID:
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+3. Đặt các biến môi trường (`.env.local` hoặc trang cài đặt của Vercel):
+   ```
+   NEXT_PUBLIC_VAPID_PUBLIC_KEY=<public key>
+   VAPID_PRIVATE_KEY=<private key>
+   VAPID_SUBJECT=mailto:email-cua-ban@example.com
+   SUPABASE_SERVICE_ROLE_KEY=<service role key>
+   ```
+4. **Build/deploy lại** (biến `NEXT_PUBLIC_*` được nhúng lúc build).
+
+### Lưu ý
+
+- Service worker chỉ hoạt động ở bản production (`npm run build && npm start`) và cần HTTPS (hoặc localhost).
+- iPhone (iOS 16.4+): phải “Thêm vào Màn hình chính” rồi mở app từ biểu tượng đó mới bật được thông báo.
+- Nếu thấy “Chưa cấu hình khóa VAPID trên server” nghĩa là thiếu biến ở bước 3 hoặc chưa build lại.
