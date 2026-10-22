@@ -65,34 +65,10 @@ export async function getPlaylist() {
   return tracks;
 }
 
-export async function uploadMusicTrack(formData: FormData) {
-  const supabase = await createClient();
-  const file = formData.get("file") as File;
-  if (!file) return { error: "Không tìm thấy file" };
-
-  // Validate audio
-  if (!file.type.startsWith("audio/")) {
-    return { error: "Vui lòng chọn file âm thanh (.mp3, .wav...)" };
-  }
-
-  // Lấy đuôi file và tên file
-  const extMatch = file.name.match(/\.[^.]+$/);
-  const ext = extMatch ? extMatch[0] : '';
-  const nameWithoutExt = file.name.replace(/\.[^.]+$/, "");
-
-  // Mã hóa tên bài hát thành Base64 để tránh lỗi Supabase Storage
-  const encodedName = encodeFileName(nameWithoutExt);
-  const fileName = `${Date.now()}_${encodedName}${ext}`;
-  
-  const { error } = await supabase.storage
-    .from("memories")
-    .upload(`music/${fileName}`, file, {
-      cacheControl: "3600",
-      upsert: false
-    });
-
-  if (error) return { error: error.message };
-
+// File nhạc được upload thẳng từ trình duyệt lên Supabase Storage
+// (Vercel giới hạn body request ~4.5MB nên không gửi file qua Server Action).
+// Action này chỉ làm mới cache sau khi upload xong.
+export async function refreshPlaylist() {
   revalidatePath("/", "layout");
   return { success: true };
 }

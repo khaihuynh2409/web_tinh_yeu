@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import { uploadMusicTrack, deleteMusicTrack, renameMusicTrack } from "@/lib/actions/music";
+import { refreshPlaylist, deleteMusicTrack, renameMusicTrack } from "@/lib/actions/music";
+import { createClient } from "@/lib/supabase/client";
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
 
 interface Track {
@@ -9,6 +10,17 @@ interface Track {
   name: string;
   rawName: string;
   url: string;
+}
+
+const AUDIO_EXTENSIONS = /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|webm|weba)$/i;
+const MAX_SIZE = 50 * 1024 * 1024;
+
+// Mã hóa tên file (unicode) sang Base64Url - giống cách server giải mã trong getPlaylist
+function encodeFileName(name: string) {
+  const bytes = new TextEncoder().encode(name);
+  let binary = "";
+  bytes.forEach(b => { binary += String.fromCharCode(b); });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 export function MusicManager({ playlist }: { playlist: Track[] }) {
@@ -25,13 +37,44 @@ export function MusicManager({ playlist }: { playlist: Track[] }) {
     if (!file) return;
 
     setError("");
-    const formData = new FormData();
-    formData.append("file", file);
+
+    // Một số điện thoại không gửi kèm MIME type, nên kiểm tra thêm đuôi file
+    if (!file.type.startsWith("audio/") && !AUDIO_EXTENSIONS.test(file.name)) {
+      setError("Vui lòng chọn file âm thanh (.mp3, .m4a, .wav...)");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      setError("File quá lớn (tối đa 50MB)");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    const extMatch = file.name.match(/\.[^.]+$/);
+    const ext = extMatch ? extMatch[0].toLowerCase() : "";
+    const nameWithoutExt = file.name.replace(/\.[^.]+$/, "");
+    const fileName = `${Date.now()}_${encodeFileName(nameWithoutExt)}${ext}`;
 
     startTransition(async () => {
-      const res = await uploadMusicTrack(formData);
-      if (res.error) setError(res.error);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      try {
+        const supabase = createClient();
+        const { error: uploadError } = await supabase.storage
+          .from("memories")
+          .upload(`music/${fileName}`, file, {
+            cacheControl: "3600",
+            contentType: file.type || "audio/mpeg",
+            upsert: false,
+          });
+        if (uploadError) {
+          setError(uploadError.message);
+        } else {
+          await refreshPlaylist();
+        }
+      } catch {
+        setError("Tải nhạc lên thất bại, vui lòng thử lại.");
+      } finally {
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
     });
   };
 
