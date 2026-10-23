@@ -8,7 +8,7 @@ import { updateSession } from "@/lib/supabase/middleware";
  *
  * Đổi giá trị rồi commit + deploy lại để áp dụng.
  */
-const SITE_DISABLED = true;
+const SITE_DISABLED = false;
 
 const MAINTENANCE_HTML = `<!doctype html>
 <html lang="vi">
