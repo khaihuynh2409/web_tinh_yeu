@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { createWish, deleteWish, toggleWishGifted } from "@/lib/actions/wishlist";
+import { createWish, deleteWish, toggleWishGifted, updateWish } from "@/lib/actions/wishlist";
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
 
 interface Wish {
@@ -37,6 +37,7 @@ export function WishList({ initialWishes, currentUserId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [wishes, setWishes] = useState<Wish[]>(initialWishes);
   const [tab, setTab] = useState<"partner" | "mine">("partner");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Đồng bộ lại khi server trả dữ liệu mới (sau router.refresh)
   const [prevInitial, setPrevInitial] = useState(initialWishes);
@@ -65,6 +66,22 @@ export function WishList({ initialWishes, currentUserId }: Props) {
       } else {
         formRef.current?.reset();
         setTab("mine");
+        router.refresh();
+      }
+    });
+  }
+
+  function handleUpdate(id: string, formData: FormData) {
+    setError(null);
+    const title = formData.get("title") as string;
+    if (!title?.trim()) return;
+
+    startTransition(async () => {
+      const res = await updateWish(id, formData);
+      if (res?.error) {
+        setError(res.error);
+      } else {
+        setEditingId(null);
         router.refresh();
       }
     });
@@ -169,6 +186,61 @@ export function WishList({ initialWishes, currentUserId }: Props) {
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         {shown.map(wish => {
           const isMine = wish.created_by === currentUserId;
+          if (isMine && editingId === wish.id) {
+            return (
+              <form
+                key={wish.id}
+                action={formData => handleUpdate(wish.id, formData)}
+                style={{
+                  background: "var(--color-surface)",
+                  padding: "1.25rem",
+                  borderRadius: "16px",
+                  border: "2px solid var(--color-primary)",
+                  boxShadow: "var(--shadow-sm)",
+                }}
+              >
+                <input name="title" defaultValue={wish.title} placeholder="Món bạn thích" required maxLength={200} style={inputStyle} />
+                <div style={{ display: "flex", gap: "0.75rem" }}>
+                  <input name="price" defaultValue={wish.price ?? ""} placeholder="Giá (tuỳ chọn)" maxLength={50} style={{ ...inputStyle, flex: 1 }} />
+                  <input name="link" defaultValue={wish.link ?? ""} placeholder="Link mua (tuỳ chọn)" maxLength={1000} inputMode="url" style={{ ...inputStyle, flex: 2 }} />
+                </div>
+                <textarea
+                  name="note"
+                  defaultValue={wish.note ?? ""}
+                  placeholder="Ghi chú: màu, size, mẫu mình thích..."
+                  rows={2}
+                  maxLength={1000}
+                  style={{ ...inputStyle, resize: "none" }}
+                />
+                <div style={{ display: "flex", gap: "0.75rem" }}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingId(null)}
+                    disabled={isPending}
+                    style={{
+                      flex: 1, padding: "0.75rem", borderRadius: "8px",
+                      border: "1px solid var(--color-border)", background: "transparent",
+                      color: "var(--color-text)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                    }}
+                  >
+                    Huỷ
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    style={{
+                      flex: 2, padding: "0.75rem", borderRadius: "8px",
+                      border: "none", background: "var(--color-primary)", color: "var(--color-text)",
+                      fontWeight: 700, cursor: isPending ? "wait" : "pointer", opacity: isPending ? 0.7 : 1,
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {isPending ? "Đang lưu..." : "Lưu thay đổi"}
+                  </button>
+                </div>
+              </form>
+            );
+          }
           return (
             <div key={wish.id} style={{
               background: "var(--color-surface)",
@@ -224,16 +296,28 @@ export function WishList({ initialWishes, currentUserId }: Props) {
                   {wish.profiles?.display_name || "Unknown"} - {new Date(wish.created_at).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
                 </p>
                 {isMine ? (
-                  <button
-                    onClick={() => handleDelete(wish.id)}
-                    style={{
-                      background: "none", border: "none", color: "var(--color-text-light)",
-                      fontSize: "1.2rem", cursor: "pointer", padding: "4px"
-                    }}
-                    title="Xóa"
-                  >
-                    ×
-                  </button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                    <button
+                      onClick={() => { setError(null); setEditingId(wish.id); }}
+                      style={{
+                        background: "none", border: "none", color: "var(--color-text-light)",
+                        fontSize: "1rem", cursor: "pointer", padding: "4px"
+                      }}
+                      title="Sửa"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(wish.id)}
+                      style={{
+                        background: "none", border: "none", color: "var(--color-text-light)",
+                        fontSize: "1.2rem", cursor: "pointer", padding: "4px"
+                      }}
+                      title="Xóa"
+                    >
+                      ×
+                    </button>
+                  </div>
                 ) : (
                   <button
                     onClick={() => handleToggleGifted(wish)}
