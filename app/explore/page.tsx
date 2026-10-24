@@ -4,10 +4,10 @@ import { BottomNav } from "@/components/BottomNav";
 
 const EXPLORE_CARDS = [
   {
-    href: "/explore/reasons",
-    title: "100 Lý do yêu nhau",
-    description: "Lưu giữ những điều nhỏ bé khiến ta rung động",
-    icon: "💝",
+    href: "/explore/wishlist",
+    title: "Wishlist",
+    description: "Những món mình thích để người ấy biết",
+    icon: "🎁",
     color: "#FDE68A",
   },
   {
