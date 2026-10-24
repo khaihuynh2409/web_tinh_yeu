@@ -59,6 +59,46 @@ export async function createWish(formData: FormData) {
   return { success: true };
 }
 
+export async function updateWish(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Bạn chưa đăng nhập" };
+  }
+
+  const title = (formData.get("title") as string)?.trim();
+  const note = (formData.get("note") as string)?.trim();
+  const price = (formData.get("price") as string)?.trim();
+  const link = normalizeLink((formData.get("link") as string)?.trim());
+
+  if (!title) {
+    return { error: "Vui lòng nhập tên món bạn thích" };
+  }
+  if (link === undefined) {
+    return { error: "Link không hợp lệ" };
+  }
+
+  const { error } = await supabase
+    .from("wishlist_items")
+    .update({
+      title,
+      note: note || null,
+      price: price || null,
+      link,
+    })
+    .eq("id", id)
+    .eq("created_by", user.id); // Chỉ sửa món của mình
+
+  if (error) {
+    console.error("Error updating wish:", error);
+    return { error: "Không thể lưu thay đổi" };
+  }
+
+  revalidatePath("/explore/wishlist");
+  return { success: true };
+}
+
 export async function toggleWishGifted(id: string, isGifted: boolean) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
