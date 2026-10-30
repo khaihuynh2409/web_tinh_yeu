@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { notifyPartner } from "@/lib/push/send";
 
 export async function createGoal(formData: FormData) {
   const supabase = await createClient();
@@ -32,6 +33,12 @@ export async function createGoal(formData: FormData) {
     return { error: "Không thể tạo mục tiêu" };
   }
 
+  await notifyPartner(user.id, {
+    title: "Mục tiêu mới 🎯",
+    body: `Người ấy vừa thêm mục tiêu: ${title.trim()}`,
+    url: "/explore/goals",
+  });
+
   revalidatePath("/explore/goals");
   return { success: true };
 }
@@ -54,15 +61,26 @@ export async function toggleGoal(id: string, isDone: boolean) {
     done_at: null
   };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("goals")
     .update(updateData)
-    .eq("id", id);
+    .eq("id", id)
+    .select("title")
+    .maybeSingle();
 
   if (error) {
     console.error("Error toggling goal:", error);
     return { error: "Không thể cập nhật mục tiêu" };
   }
+
+  const name = data?.title ? `: ${data.title}` : " một mục tiêu";
+  await notifyPartner(user.id, {
+    title: isDone ? "Hoàn thành mục tiêu 🎉" : "Cập nhật mục tiêu 🎯",
+    body: isDone
+      ? `Người ấy vừa hoàn thành${name}`
+      : `Người ấy vừa bỏ đánh dấu hoàn thành${name}`,
+    url: "/explore/goals",
+  });
 
   revalidatePath("/explore/goals");
   return { success: true };
@@ -76,15 +94,23 @@ export async function deleteGoal(id: string) {
     return { error: "Bạn chưa đăng nhập" };
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("goals")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .select("title")
+    .maybeSingle();
 
   if (error) {
     console.error("Error deleting goal:", error);
     return { error: "Không thể xóa mục tiêu" };
   }
+
+  await notifyPartner(user.id, {
+    title: "Mục tiêu đã bị xóa 🗑️",
+    body: data?.title ? `Người ấy vừa xóa mục tiêu: ${data.title}` : "Người ấy vừa xóa một mục tiêu.",
+    url: "/explore/goals",
+  });
 
   revalidatePath("/explore/goals");
   return { success: true };

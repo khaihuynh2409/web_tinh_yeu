@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { notifyPartner } from "@/lib/push/send";
 
 export async function updateSettings(formData: FormData) {
   const supabase = await createClient();
@@ -26,6 +27,12 @@ export async function updateSettings(formData: FormData) {
     console.error("Error updating settings:", error);
     throw new Error("Failed to update settings");
   }
+
+  await notifyPartner(user.id, {
+    title: "Cài đặt đã thay đổi ⚙️",
+    body: "Người ấy vừa cập nhật tên, ngày bắt đầu hoặc giao diện.",
+    url: "/settings",
+  });
 
   revalidatePath("/", "layout"); // Revalidate entire app to apply theme and names
 }

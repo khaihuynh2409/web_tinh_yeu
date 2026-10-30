@@ -2,6 +2,7 @@
 
 import { createClient } from "../supabase/server";
 import { revalidatePath } from "next/cache";
+import { notifyPartner } from "@/lib/push/send";
 
 // Helper functions to safely encode/decode unicode filenames to Base64Url
 function encodeFileName(name: string) {
@@ -19,6 +20,16 @@ function decodeFileName(safeName: string) {
   } catch (e) {
     return safeName; // Fallback if it wasn't base64 encoded
   }
+}
+
+// Tên hiển thị từ tên file trong Storage: bỏ tiền tố thời gian, đuôi file và giải mã Base64Url
+function displayNameFromRaw(rawName: string) {
+  const baseName = rawName.replace(/^\d+_/, "").replace(/\.[^.]+$/, "");
+  let displayName = decodeFileName(baseName);
+  if (displayName === baseName && baseName.includes("%")) {
+    try { displayName = decodeURIComponent(baseName); } catch {}
+  }
+  return displayName.replace(/_/g, " ");
 }
 
 export async function getPlaylist() {
@@ -67,19 +78,40 @@ export async function getPlaylist() {
 
 // File nhạc được upload thẳng từ trình duyệt lên Supabase Storage
 // (Vercel giới hạn body request ~4.5MB nên không gửi file qua Server Action).
-// Action này chỉ làm mới cache sau khi upload xong.
-export async function refreshPlaylist() {
+// Action này làm mới cache và báo cho nửa kia sau khi upload xong.
+export async function refreshPlaylist(uploadedFileName?: string) {
+  if (uploadedFileName) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await notifyPartner(user.id, {
+        title: "Bài hát mới 🎵",
+        body: `Người ấy vừa thêm nhạc: ${displayNameFromRaw(uploadedFileName)}`,
+        url: "/settings",
+      });
+    }
+  }
+
   revalidatePath("/", "layout");
   return { success: true };
 }
 
 export async function deleteMusicTrack(fileName: string) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Bạn chưa đăng nhập" };
+
   const { error } = await supabase.storage
     .from("memories")
     .remove([`music/${fileName}`]);
 
   if (error) return { error: error.message };
+
+  await notifyPartner(user.id, {
+    title: "Đã xóa bài hát 🗑️",
+    body: `Người ấy vừa xóa nhạc: ${displayNameFromRaw(fileName)}`,
+    url: "/settings",
+  });
 
   revalidatePath("/", "layout");
   return { success: true };
@@ -87,6 +119,8 @@ export async function deleteMusicTrack(fileName: string) {
 
 export async function renameMusicTrack(oldFileName: string, newName: string) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Bạn chưa đăng nhập" };
   
   // Create a safe new filename keeping the original timestamp if possible
   const timestampMatch = oldFileName.match(/^\d+_/);
@@ -111,6 +145,12 @@ export async function renameMusicTrack(oldFileName: string, newName: string) {
     .move(`music/${oldFileName}`, `music/${newFileName}`);
 
   if (error) return { error: error.message };
+
+  await notifyPartner(user.id, {
+    title: "Đổi tên bài hát ✏️",
+    body: `Người ấy vừa đổi tên "${displayNameFromRaw(oldFileName)}" thành "${baseName}"`,
+    url: "/settings",
+  });
 
   revalidatePath("/", "layout");
   return { success: true };

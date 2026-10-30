@@ -52,12 +52,23 @@ export async function deleteAchievement(id: string) {
     return { error: "Bạn chưa đăng nhập" };
   }
 
-  const { error } = await supabase.from("achievements").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("achievements")
+    .delete()
+    .eq("id", id)
+    .select("title")
+    .maybeSingle();
 
   if (error) {
     console.error("Error deleting achievement:", error);
     return { error: "Không thể xóa thành tích" };
   }
+
+  await notifyPartner(user.id, {
+    title: "Thành tích đã bị xóa 🗑️",
+    body: data?.title ? `Người ấy vừa xóa: ${data.title}` : "Người ấy vừa xóa một thành tích.",
+    url: "/achievements",
+  });
 
   revalidatePath("/achievements");
   return { success: true };

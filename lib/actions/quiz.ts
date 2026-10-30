@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { notifyPartner } from "@/lib/push/send";
 
 export async function createQuiz(formData: FormData) {
   const supabase = await createClient();
@@ -33,6 +34,12 @@ export async function createQuiz(formData: FormData) {
     return { error: "Không thể thêm câu hỏi" };
   }
 
+  await notifyPartner(user.id, {
+    title: "Câu đố mới ❓",
+    body: `Người ấy vừa thêm câu hỏi: ${question.trim()}`,
+    url: "/explore/quiz",
+  });
+
   revalidatePath("/explore/quiz");
   return { success: true };
 }
@@ -43,15 +50,23 @@ export async function deleteQuiz(id: string) {
   
   if (!user) return { error: "Unauthorized" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("quiz_questions")
     .delete()
     .eq("id", id)
-    .eq("created_by", user.id); // Only allow deleting own question
+    .eq("created_by", user.id) // Only allow deleting own question
+    .select("question")
+    .maybeSingle();
 
   if (error) {
     return { error: "Không thể xóa câu hỏi này" };
   }
+
+  await notifyPartner(user.id, {
+    title: "Câu đố đã bị xóa 🗑️",
+    body: data?.question ? `Người ấy vừa xóa câu hỏi: ${data.question}` : "Người ấy vừa xóa một câu hỏi.",
+    url: "/explore/quiz",
+  });
 
   revalidatePath("/explore/quiz");
   return { success: true };

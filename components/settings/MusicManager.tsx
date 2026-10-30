@@ -68,7 +68,7 @@ export function MusicManager({ playlist }: { playlist: Track[] }) {
         if (uploadError) {
           setError(uploadError.message);
         } else {
-          await refreshPlaylist();
+          await refreshPlaylist(fileName);
         }
       } catch {
         setError("Tải nhạc lên thất bại, vui lòng thử lại.");

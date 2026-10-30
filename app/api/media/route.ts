@@ -1,11 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { notifyPartner } from "@/lib/push/send";
 
 // Helper functions to safely encode/decode unicode filenames to Base64Url
 function encodeFileName(name: string) {
   const b64 = Buffer.from(name, 'utf8').toString('base64');
   return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Báo cho nửa kia khi có ảnh/video mới. Khi tải nhiều file cùng lúc,
+// chỉ gửi 1 thông báo cho cả lô: bỏ qua nếu người này đã thêm media
+// vào cùng kỷ niệm trong vòng 2 phút trước đó.
+async function notifyMediaAdded(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  memoryId: string,
+  isVideo: boolean
+) {
+  try {
+    const since = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    const { count } = await supabase
+      .from("media")
+      .select("id", { count: "exact", head: true })
+      .eq("memory_id", memoryId)
+      .eq("created_by", userId)
+      .gte("created_at", since);
+
+    // count đã bao gồm file vừa thêm; > 1 nghĩa là lô này đã được báo rồi
+    if ((count ?? 0) > 1) return;
+
+    const { data: memory } = await supabase
+      .from("memories")
+      .select("title")
+      .eq("id", memoryId)
+      .maybeSingle();
+
+    const kind = isVideo ? "video" : "ảnh";
+    await notifyPartner(userId, {
+      title: isVideo ? "Video mới 🎬" : "Ảnh mới 🖼️",
+      body: memory?.title
+        ? `Người ấy vừa thêm ${kind} vào: ${memory.title}`
+        : `Người ấy vừa thêm ${kind} mới.`,
+      url: `/memories/${memoryId}`,
+    });
+  } catch (err) {
+    console.error("notifyMediaAdded failed:", err);
+  }
 }
 
 // POST /api/media - Upload file lên Supabase Storage
@@ -69,6 +110,8 @@ export async function POST(request: NextRequest) {
       await supabase.storage.from("memories").remove([storagePath]);
       return NextResponse.json({ error: dbError.message }, { status: 500 });
     }
+
+    await notifyMediaAdded(supabase, user.id, memoryId, isVideo);
 
     revalidatePath("/");
     revalidatePath(`/memories/${memoryId}`);

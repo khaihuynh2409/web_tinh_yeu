@@ -37,7 +37,23 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Thông báo (Web Push)
 
-Ứng dụng gửi thông báo cho nửa kia khi có **thư mới** hoặc **kỷ niệm mới**. Bật/tắt ở **Cài đặt → Thông báo** (mỗi thiết bị bật riêng).
+Ứng dụng gửi thông báo cho nửa kia với **mọi thay đổi** mà một người thực hiện. Bật/tắt ở **Cài đặt → Thông báo** (mỗi thiết bị bật riêng).
+
+Các thao tác có thông báo:
+
+| Mục | Thêm | Sửa / cập nhật | Xóa |
+|---|---|---|---|
+| Kỷ niệm | ✅ | ✅ sửa nội dung, ✅ khôi phục từ thùng rác | ✅ xóa mềm, ✅ xóa vĩnh viễn |
+| Ảnh / video | ✅ (tải nhiều file cùng lúc chỉ báo 1 lần) | – | ✅ |
+| Thành tích | ✅ | – | ✅ |
+| Wishlist | ✅ | ✅ sửa món, ✅ đánh dấu đã tặng | ✅ |
+| Mục tiêu | ✅ | ✅ hoàn thành / bỏ hoàn thành | ✅ |
+| Câu đố | ✅ | – | ✅ |
+| Thư | ✅ | – | – |
+| Nhạc nền | ✅ | ✅ đổi tên | ✅ |
+| Cài đặt chung (tên, ngày, giao diện) | – | ✅ | – |
+
+Đổi mật khẩu là việc riêng của mỗi người nên **không** gửi thông báo.
 
 ### Cấu hình trên server
 
