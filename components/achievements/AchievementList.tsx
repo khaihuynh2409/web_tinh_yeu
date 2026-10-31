@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createAchievement, deleteAchievement } from "@/lib/actions/achievements";
+import { createAchievement, deleteAchievement, updateAchievement } from "@/lib/actions/achievements";
 import { useConfirm } from "@/components/ui/ConfirmDialogProvider";
 import { formatVietnameseDate } from "@/lib/utils/date";
 
@@ -22,12 +22,38 @@ const inputStyle = {
   background: "var(--color-bg)", color: "var(--color-text)", fontFamily: "inherit",
 } as const;
 
+function IconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.75rem" }}>
+      {ICONS.map((i) => (
+        <button
+          key={i} type="button" onClick={() => onChange(i)} aria-label={`Biểu tượng ${i}`}
+          style={{
+            width: 40, height: 40, borderRadius: "12px", fontSize: "1.25rem", cursor: "pointer",
+            border: value === i ? "2px solid var(--color-primary-dark)" : "1px solid var(--color-border)",
+            background: value === i ? "var(--color-primary)" : "var(--color-bg)",
+          }}
+        >
+          {i}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const iconButtonStyle = {
+  background: "none", border: "none", color: "var(--color-text-light)",
+  fontSize: "1.2rem", cursor: "pointer", padding: "4px",
+} as const;
+
 export function AchievementList({ achievements }: { achievements: Achievement[] }) {
   const router = useRouter();
   const confirm = useConfirm();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [icon, setIcon] = useState(ICONS[0]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editIcon, setEditIcon] = useState(ICONS[0]);
   const today = new Date().toISOString().split("T")[0];
 
   function handleAdd(formData: FormData) {
@@ -37,6 +63,25 @@ export function AchievementList({ achievements }: { achievements: Achievement[] 
       const res = await createAchievement(formData);
       if (res?.error) setError(res.error);
       else router.refresh();
+    });
+  }
+
+  function startEdit(a: Achievement) {
+    setError(null);
+    setEditingId(a.id);
+    setEditIcon(a.icon);
+  }
+
+  function handleUpdate(id: string, formData: FormData) {
+    setError(null);
+    formData.set("icon", editIcon);
+    startTransition(async () => {
+      const res = await updateAchievement(id, formData);
+      if (res?.error) setError(res.error);
+      else {
+        setEditingId(null);
+        router.refresh();
+      }
     });
   }
 
@@ -63,20 +108,7 @@ export function AchievementList({ achievements }: { achievements: Achievement[] 
       }}>
         <h3 style={{ fontSize: "1rem", margin: "0 0 1rem", color: "var(--color-text)" }}>Thêm thành tích mới</h3>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.75rem" }}>
-          {ICONS.map((i) => (
-            <button
-              key={i} type="button" onClick={() => setIcon(i)} aria-label={`Biểu tượng ${i}`}
-              style={{
-                width: 40, height: 40, borderRadius: "12px", fontSize: "1.25rem", cursor: "pointer",
-                border: icon === i ? "2px solid var(--color-primary-dark)" : "1px solid var(--color-border)",
-                background: icon === i ? "var(--color-primary)" : "var(--color-bg)",
-              }}
-            >
-              {i}
-            </button>
-          ))}
-        </div>
+        <IconPicker value={icon} onChange={setIcon} />
 
         <input
           type="text" name="title" required
@@ -105,7 +137,55 @@ export function AchievementList({ achievements }: { achievements: Achievement[] 
       </form>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-        {achievements.map((a) => (
+        {achievements.map((a) => editingId === a.id ? (
+          <form
+            key={a.id}
+            action={(formData) => handleUpdate(a.id, formData)}
+            style={{
+              background: "var(--color-surface)", padding: "1.25rem", borderRadius: "16px",
+              border: "2px solid var(--color-primary)", boxShadow: "var(--shadow-sm)",
+            }}
+          >
+            <h3 style={{ fontSize: "1rem", margin: "0 0 1rem", color: "var(--color-text)" }}>Sửa thành tích</h3>
+            <IconPicker value={editIcon} onChange={setEditIcon} />
+            <input
+              type="text" name="title" required defaultValue={a.title}
+              placeholder="Tên thành tích"
+              style={inputStyle}
+            />
+            <textarea
+              name="description" rows={2} defaultValue={a.description ?? ""}
+              placeholder="Ghi chú thêm (không bắt buộc)"
+              style={{ ...inputStyle, resize: "none" }}
+            />
+            <label style={{ display: "block", fontSize: "0.8rem", color: "var(--color-text-muted)", marginBottom: "0.25rem" }}>
+              Ngày đạt được
+            </label>
+            <input type="date" name="achieved_at" defaultValue={a.achieved_at} required style={{ ...inputStyle, marginBottom: "1rem" }} />
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                type="button" onClick={() => setEditingId(null)} disabled={isPending}
+                style={{
+                  flex: 1, padding: "0.75rem", borderRadius: "8px",
+                  border: "1px solid var(--color-border)", background: "transparent",
+                  color: "var(--color-text)", fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                Huỷ
+              </button>
+              <button
+                type="submit" disabled={isPending}
+                style={{
+                  flex: 2, padding: "0.75rem", borderRadius: "8px", border: "none",
+                  background: "var(--color-primary)", color: "var(--color-text)", fontWeight: 700,
+                  cursor: isPending ? "wait" : "pointer", opacity: isPending ? 0.7 : 1, fontFamily: "inherit",
+                }}
+              >
+                {isPending ? "Đang lưu..." : "Lưu thay đổi"}
+              </button>
+            </div>
+          </form>
+        ) : (
           <div key={a.id} style={{
             background: "var(--color-surface)", padding: "1rem", borderRadius: "16px",
             border: "1px solid var(--color-border)", display: "flex", alignItems: "flex-start", gap: "1rem",
@@ -127,12 +207,14 @@ export function AchievementList({ achievements }: { achievements: Achievement[] 
                 {formatVietnameseDate(a.achieved_at)}
               </p>
             </div>
-            <button
-              onClick={() => handleDelete(a.id)} title="Xóa"
-              style={{ background: "none", border: "none", color: "var(--color-text-light)", fontSize: "1.2rem", cursor: "pointer", padding: "4px" }}
-            >
-              ×
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.25rem", flexShrink: 0 }}>
+              <button onClick={() => startEdit(a)} title="Sửa" disabled={isPending} style={{ ...iconButtonStyle, fontSize: "1rem" }}>
+                ✏️
+              </button>
+              <button onClick={() => handleDelete(a.id)} title="Xóa" disabled={isPending} style={iconButtonStyle}>
+                ×
+              </button>
+            </div>
           </div>
         ))}
         {achievements.length === 0 && (
