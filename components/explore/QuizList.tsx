@@ -302,6 +302,7 @@ function QuizAnswerInput({
           disabled={checkState === "correct"}
           style={{
             flex: 1,
+            minWidth: 0, // cho phép ô nhập co lại, tránh đẩy nút Kiểm tra ra ngoài khung
             padding: "0.7rem 0.9rem",
             borderRadius: "10px",
             border: `2px solid ${borderColor}`,
