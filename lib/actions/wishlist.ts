@@ -95,6 +95,12 @@ export async function updateWish(id: string, formData: FormData) {
     return { error: "Không thể lưu thay đổi" };
   }
 
+  await notifyPartner(user.id, {
+    title: "Wishlist được chỉnh sửa ✏️",
+    body: `Người ấy vừa sửa món: ${title}`,
+    url: "/explore/wishlist",
+  });
+
   revalidatePath("/explore/wishlist");
   return { success: true };
 }
@@ -107,15 +113,26 @@ export async function toggleWishGifted(id: string, isGifted: boolean) {
     return { error: "Bạn chưa đăng nhập" };
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("wishlist_items")
     .update({ is_gifted: isGifted })
-    .eq("id", id);
+    .eq("id", id)
+    .select("title")
+    .maybeSingle();
 
   if (error) {
     console.error("Error updating wish:", error);
     return { error: "Không thể cập nhật" };
   }
+
+  const name = data?.title ? `: ${data.title}` : " một món trong wishlist";
+  await notifyPartner(user.id, {
+    title: isGifted ? "Đã tặng quà 🎉" : "Cập nhật wishlist 🎁",
+    body: isGifted
+      ? `Người ấy vừa đánh dấu đã tặng${name}`
+      : `Người ấy vừa bỏ đánh dấu đã tặng${name}`,
+    url: "/explore/wishlist",
+  });
 
   revalidatePath("/explore/wishlist");
   return { success: true };
@@ -129,16 +146,24 @@ export async function deleteWish(id: string) {
     return { error: "Bạn chưa đăng nhập" };
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("wishlist_items")
     .delete()
     .eq("id", id)
-    .eq("created_by", user.id); // Chỉ xóa món của mình
+    .eq("created_by", user.id) // Chỉ xóa món của mình
+    .select("title")
+    .maybeSingle();
 
   if (error) {
     console.error("Error deleting wish:", error);
     return { error: "Không thể xóa món này" };
   }
+
+  await notifyPartner(user.id, {
+    title: "Wishlist đã bị xóa 🗑️",
+    body: data?.title ? `Người ấy vừa xóa món: ${data.title}` : "Người ấy vừa xóa một món trong wishlist.",
+    url: "/explore/wishlist",
+  });
 
   revalidatePath("/explore/wishlist");
   return { success: true };

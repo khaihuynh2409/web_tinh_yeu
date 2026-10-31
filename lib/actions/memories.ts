@@ -69,7 +69,7 @@ export async function createMemory(formData: FormData) {
 // Cập nhật kỷ niệm
 // ────────────────────────────────────────────────
 export async function updateMemory(id: string, formData: FormData) {
-  const { supabase } = await requireMember();
+  const { supabase, user } = await requireMember();
 
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
@@ -87,6 +87,12 @@ export async function updateMemory(id: string, formData: FormData) {
 
   if (error) throw new Error(error.message);
 
+  await notifyPartner(user.id, {
+    title: "Kỷ niệm được chỉnh sửa ✏️",
+    body: title ? `Người ấy vừa sửa: ${title}` : "Người ấy vừa sửa một kỷ niệm.",
+    url: `/memories/${id}`,
+  });
+
   revalidatePath("/");
   revalidatePath(`/memories/${id}`);
   redirect(`/memories/${id}`);
@@ -96,15 +102,23 @@ export async function updateMemory(id: string, formData: FormData) {
 // Xóa mềm kỷ niệm (chuyển vào thùng rác)
 // ────────────────────────────────────────────────
 export async function softDeleteMemory(id: string) {
-  const { supabase } = await requireMember();
+  const { supabase, user } = await requireMember();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("memories")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .select("title")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+
+  await notifyPartner(user.id, {
+    title: "Kỷ niệm đã chuyển vào thùng rác 🗑️",
+    body: data?.title ? `Người ấy vừa xóa: ${data.title}` : "Người ấy vừa xóa một kỷ niệm.",
+    url: "/trash",
+  });
 
   revalidatePath("/");
   redirect("/");
@@ -114,14 +128,22 @@ export async function softDeleteMemory(id: string) {
 // Khôi phục từ thùng rác
 // ────────────────────────────────────────────────
 export async function restoreMemory(id: string) {
-  const { supabase } = await requireMember();
+  const { supabase, user } = await requireMember();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("memories")
     .update({ deleted_at: null })
-    .eq("id", id);
+    .eq("id", id)
+    .select("title")
+    .maybeSingle();
 
   if (error) throw new Error(error.message);
+
+  await notifyPartner(user.id, {
+    title: "Kỷ niệm được khôi phục ♻️",
+    body: data?.title ? `Người ấy vừa khôi phục: ${data.title}` : "Người ấy vừa khôi phục một kỷ niệm.",
+    url: `/memories/${id}`,
+  });
 
   revalidatePath("/");
   revalidatePath("/trash");
@@ -132,7 +154,14 @@ export async function restoreMemory(id: string) {
 // Xóa vĩnh viễn (xóa cả media trong storage)
 // ────────────────────────────────────────────────
 export async function permanentDeleteMemory(id: string) {
-  const { supabase } = await requireMember();
+  const { supabase, user } = await requireMember();
+
+  // Lấy tiêu đề trước khi xóa để đưa vào thông báo
+  const { data: memory } = await supabase
+    .from("memories")
+    .select("title")
+    .eq("id", id)
+    .maybeSingle();
 
   // Lấy tất cả media paths của kỷ niệm này
   const { data: mediaList } = await supabase
@@ -152,6 +181,14 @@ export async function permanentDeleteMemory(id: string) {
 
   if (error) throw new Error(error.message);
 
+  await notifyPartner(user.id, {
+    title: "Kỷ niệm đã bị xóa vĩnh viễn 💔",
+    body: memory?.title
+      ? `Người ấy vừa xóa vĩnh viễn: ${memory.title}`
+      : "Người ấy vừa xóa vĩnh viễn một kỷ niệm.",
+    url: "/trash",
+  });
+
   revalidatePath("/");
   revalidatePath("/trash");
   redirect("/trash");
@@ -166,7 +203,7 @@ export async function attachMedia(
   type: "image" | "video",
   sizeBytes: number
 ) {
-  const { supabase } = await requireMember();
+  const { supabase, user } = await requireMember();
 
   const { error } = await supabase.from("media").insert({
     memory_id: memoryId,
@@ -176,6 +213,21 @@ export async function attachMedia(
   });
 
   if (error) throw new Error(error.message);
+
+  const { data: memory } = await supabase
+    .from("memories")
+    .select("title")
+    .eq("id", memoryId)
+    .maybeSingle();
+
+  await notifyPartner(user.id, {
+    title: type === "video" ? "Video mới 🎬" : "Ảnh mới 🖼️",
+    body: memory?.title
+      ? `Người ấy vừa thêm ${type === "video" ? "video" : "ảnh"} vào: ${memory.title}`
+      : `Người ấy vừa thêm ${type === "video" ? "video" : "ảnh"} mới.`,
+    url: `/memories/${memoryId}`,
+  });
+
   revalidatePath(`/memories/${memoryId}`);
 }
 
@@ -183,11 +235,31 @@ export async function attachMedia(
 // Xóa 1 media
 // ────────────────────────────────────────────────
 export async function deleteMedia(mediaId: string, storagePath: string, memoryId: string) {
-  const { supabase } = await requireMember();
+  const { supabase, user } = await requireMember();
 
   await supabase.storage.from("memories").remove([storagePath]);
-  const { error } = await supabase.from("media").delete().eq("id", mediaId);
+  const { data, error } = await supabase
+    .from("media")
+    .delete()
+    .eq("id", mediaId)
+    .select("type")
+    .maybeSingle();
   if (error) throw new Error(error.message);
+
+  const { data: memory } = await supabase
+    .from("memories")
+    .select("title")
+    .eq("id", memoryId)
+    .maybeSingle();
+
+  const kind = data?.type === "video" ? "video" : "ảnh";
+  await notifyPartner(user.id, {
+    title: `Đã xóa ${kind} 🗑️`,
+    body: memory?.title
+      ? `Người ấy vừa xóa một ${kind} khỏi: ${memory.title}`
+      : `Người ấy vừa xóa một ${kind}.`,
+    url: `/memories/${memoryId}`,
+  });
 
   revalidatePath(`/memories/${memoryId}`);
   revalidatePath(`/`);
