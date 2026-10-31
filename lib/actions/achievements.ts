@@ -44,6 +44,48 @@ export async function createAchievement(formData: FormData) {
   return { success: true };
 }
 
+export async function updateAchievement(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Bạn chưa đăng nhập" };
+  }
+
+  const title = (formData.get("title") as string)?.trim();
+  const description = (formData.get("description") as string)?.trim();
+  const icon = (formData.get("icon") as string)?.trim() || "🏆";
+  const achievedAt = formData.get("achieved_at") as string;
+
+  if (!title) {
+    return { error: "Vui lòng nhập tên thành tích" };
+  }
+
+  const { error } = await supabase
+    .from("achievements")
+    .update({
+      title,
+      description: description || null,
+      icon,
+      achieved_at: achievedAt || new Date().toISOString().split("T")[0],
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error updating achievement:", error);
+    return { error: "Không thể lưu thay đổi" };
+  }
+
+  await notifyPartner(user.id, {
+    title: "Thành tích được chỉnh sửa ✏️",
+    body: `Người ấy vừa sửa: ${title}`,
+    url: "/achievements",
+  });
+
+  revalidatePath("/achievements");
+  return { success: true };
+}
+
 export async function deleteAchievement(id: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

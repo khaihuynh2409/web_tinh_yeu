@@ -45,7 +45,7 @@ Các thao tác có thông báo:
 |---|---|---|---|
 | Kỷ niệm | ✅ | ✅ sửa nội dung, ✅ khôi phục từ thùng rác | ✅ xóa mềm, ✅ xóa vĩnh viễn |
 | Ảnh / video | ✅ (tải nhiều file cùng lúc chỉ báo 1 lần) | – | ✅ |
-| Thành tích | ✅ | – | ✅ |
+| Thành tích | ✅ | ✅ | ✅ |
 | Wishlist | ✅ | ✅ sửa món, ✅ đánh dấu đã tặng | ✅ |
 | Mục tiêu | ✅ | ✅ hoàn thành / bỏ hoàn thành | ✅ |
 | Câu đố | ✅ | – | ✅ |
